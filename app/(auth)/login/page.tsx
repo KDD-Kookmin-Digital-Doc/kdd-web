@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { Loader2 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { useProfileForm } from "@/hooks/useProfileForm";
@@ -53,11 +54,14 @@ function LoginPageContent() {
   const stepParam = searchParams.get("step");
 
   const [phase, setPhase] = useState<"carousel" | "profile">(
-    stepParam === "profile" ? "profile" : "carousel"
+    stepParam === "profile" ? "profile" : "carousel",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
+  const popupRef = useRef<Window | null>(null);
+  const popupWatcherRef = useRef<number | null>(null);
 
   const {
     step,
@@ -94,8 +98,15 @@ function LoginPageContent() {
       const code = event.data.code as string;
       if (!code) return;
 
+      // 팝업 닫힘 감시 타이머 종료 (로그인 성공 경로)
+      if (popupWatcherRef.current !== null) {
+        window.clearInterval(popupWatcherRef.current);
+        popupWatcherRef.current = null;
+      }
+
       try {
         setLoginError(null);
+        setIsLoggingIn(true);
         const response = await googleLogin(code);
         authManager.setToken(response.accessToken);
         const me = await getMyInfo();
@@ -110,25 +121,36 @@ function LoginPageContent() {
         }
       } catch (error) {
         if (error instanceof ApiError) {
-          setLoginError(
-            ERROR_MESSAGES[error.code] ?? error.message
-          );
+          setLoginError(ERROR_MESSAGES[error.code] ?? error.message);
         } else {
           setLoginError("로그인 중 오류가 발생했습니다.");
         }
+      } finally {
+        setIsLoggingIn(false);
       }
     };
 
     window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [router]);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+      if (popupWatcherRef.current !== null) {
+        window.clearInterval(popupWatcherRef.current);
+        popupWatcherRef.current = null;
+      }
+    };
+  }, [router, updateBasicInfo]);
 
   const handleGoogleLogin = () => {
+    if (isLoggingIn) return;
+
     if (!GOOGLE_CLIENT_ID) {
       // mock 모드: 직접 프로필 단계로 이동
       setPhase("profile");
       return;
     }
+
+    setLoginError(null);
+    setIsLoggingIn(true);
 
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
@@ -143,18 +165,39 @@ function LoginPageContent() {
     // 팝업을 화면 가운데에 배치 (멀티 모니터 환경에서도 부모 창 기준)
     const popupWidth = 500;
     const popupHeight = 600;
-    const left = Math.round(window.screenX + (window.outerWidth - popupWidth) / 2);
-    const top = Math.round(window.screenY + (window.outerHeight - popupHeight) / 2);
+    const left = Math.round(
+      window.screenX + (window.outerWidth - popupWidth) / 2,
+    );
+    const top = Math.round(
+      window.screenY + (window.outerHeight - popupHeight) / 2,
+    );
     const popup = window.open(
       authUrl,
       "_blank",
-      `popup,width=${popupWidth},height=${popupHeight},left=${left},top=${top}`
+      `popup,width=${popupWidth},height=${popupHeight},left=${left},top=${top}`,
     );
 
     if (!popup) {
       // 팝업 차단된 경우: 전체 페이지 리다이렉트로 fallback
       window.location.href = authUrl;
+      return;
     }
+
+    // 팝업 참조 저장 + 사용자가 팝업을 그냥 닫은 경우 로딩 상태 해제
+    popupRef.current = popup;
+    if (popupWatcherRef.current !== null) {
+      window.clearInterval(popupWatcherRef.current);
+    }
+    popupWatcherRef.current = window.setInterval(() => {
+      if (popupRef.current?.closed) {
+        window.clearInterval(popupWatcherRef.current!);
+        popupWatcherRef.current = null;
+        popupRef.current = null;
+        // 사용자가 code 수신 없이 팝업을 닫은 케이스만 도달.
+        // 성공 경로라면 handleMessage에서 이미 interval을 clear했음.
+        setIsLoggingIn(false);
+      }
+    }, 500);
   };
 
   const handleProfileBack = () => {
@@ -220,8 +263,12 @@ function LoginPageContent() {
         <div className="flex flex-col items-center justify-between mx-auto max-w-100 min-h-dvh px-5 py-8">
           {/* KDD 브랜드 */}
           <div className="flex flex-col items-center shrink-0">
-            <span className="text-2xl font-bold tracking-tight text-primary">KDD</span>
-            <span className="text-xs text-muted-foreground">Kookmin Digital Doc</span>
+            <span className="text-2xl font-bold tracking-tight text-primary">
+              KDD
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Kookmin Digital Doc
+            </span>
           </div>
 
           {/* Slide content */}
@@ -273,10 +320,20 @@ function LoginPageContent() {
               <Button
                 variant="outline"
                 onClick={handleGoogleLogin}
+                disabled={isLoggingIn}
                 className="w-full h-12 rounded-2xl text-[15px] font-medium"
               >
-                <FcGoogle className="size-5" />
-                Google로 계속하기
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="size-5 animate-spin" />
+                    로그인 중...
+                  </>
+                ) : (
+                  <>
+                    <FcGoogle className="size-5" />
+                    Google로 계속하기
+                  </>
+                )}
               </Button>
               {loginError && (
                 <p className="text-xs text-destructive text-center">
