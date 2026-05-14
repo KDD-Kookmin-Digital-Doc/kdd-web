@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   Search,
@@ -21,15 +21,18 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminDocuments } from "@/hooks/useAdminDocuments";
-import { DOCUMENT_CATEGORIES } from "@/constants/categories";
 import { uploadDocument } from "@/lib/api/services/admin.service";
-import { getDocumentDetail } from "@/lib/api/services/document.service";
+import {
+  getCategoryTree,
+  getDocumentDetail,
+} from "@/lib/api/services/document.service";
 import { ApiError, ERROR_MESSAGES } from "@/lib/api/errors";
+import { flattenLeafCategories, type FlatCategory } from "@/lib/categories";
 import type { AdminDocument } from "@/types/api/admin";
 
 const PDFViewer = dynamic(
   () => import("@/components/shared/PDFViewer").then((m) => m.PDFViewer),
-  { ssr: false }
+  { ssr: false },
 );
 
 // ─── 상수 ───────────────────────────────────────────────────────────────────
@@ -73,9 +76,15 @@ const STATUS_CONFIG: Record<
 const CATEGORY_STYLE: Record<string, { bg: string; fg: string }> = {
   "SW 학사공지": { bg: "bg-topic-academic-bg", fg: "text-topic-academic-fg" },
   "SW 취업공지": { bg: "bg-topic-career-bg", fg: "text-topic-career-fg" },
-  "SW 장학공지": { bg: "bg-topic-scholarship-bg", fg: "text-topic-scholarship-fg" },
+  "SW 장학공지": {
+    bg: "bg-topic-scholarship-bg",
+    fg: "text-topic-scholarship-fg",
+  },
   "SW 특강 및 행사": { bg: "bg-topic-event-bg", fg: "text-topic-event-fg" },
-  "SW 졸업요건": { bg: "bg-topic-graduation-bg", fg: "text-topic-graduation-fg" },
+  "SW 졸업요건": {
+    bg: "bg-topic-graduation-bg",
+    fg: "text-topic-graduation-fg",
+  },
   "국민대학교 공지": { bg: "bg-topic-major-bg", fg: "text-topic-major-fg" },
 };
 
@@ -127,19 +136,27 @@ interface PDFViewerState {
 // ─── 업로드 모달 ─────────────────────────────────────────────────────────────
 
 interface UploadModalProps {
+  categories: FlatCategory[];
   onClose: () => void;
   onUploaded: () => void;
 }
 
-function UploadModal({ onClose, onUploaded }: UploadModalProps) {
+function UploadModal({ categories, onClose, onUploaded }: UploadModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadCategoryId, setUploadCategoryId] = useState<number>(
-    DOCUMENT_CATEGORIES[0].id
+  const [uploadCategoryId, setUploadCategoryId] = useState<number | null>(
+    categories[0]?.id ?? null,
   );
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // 카테고리 목록이 늦게 로드된 경우 초기값을 채워준다
+  useEffect(() => {
+    if (uploadCategoryId === null && categories.length > 0) {
+      setUploadCategoryId(categories[0].id);
+    }
+  }, [categories, uploadCategoryId]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -159,7 +176,7 @@ function UploadModal({ onClose, onUploaded }: UploadModalProps) {
   };
 
   const handleUpload = async () => {
-    if (!uploadFile) return;
+    if (!uploadFile || uploadCategoryId === null) return;
     setIsUploading(true);
     setUploadError(null);
 
@@ -173,7 +190,7 @@ function UploadModal({ onClose, onUploaded }: UploadModalProps) {
     };
     formData.append(
       "data",
-      new Blob([JSON.stringify(data)], { type: "application/json" })
+      new Blob([JSON.stringify(data)], { type: "application/json" }),
     );
 
     try {
@@ -217,7 +234,7 @@ function UploadModal({ onClose, onUploaded }: UploadModalProps) {
               ? "border-primary bg-primary/5"
               : uploadFile
                 ? "border-primary bg-accent"
-                : "border-border hover:border-primary hover:bg-accent/50"
+                : "border-border hover:border-primary hover:bg-accent/50",
           )}
         >
           <input
@@ -264,14 +281,19 @@ function UploadModal({ onClose, onUploaded }: UploadModalProps) {
           <div className="relative">
             <select
               className="w-full appearance-none rounded-xl border border-border bg-secondary px-3 py-2.5 pr-8 text-[13px] text-foreground outline-none focus:ring-2 focus:ring-ring"
-              value={uploadCategoryId}
+              value={uploadCategoryId ?? ""}
               onChange={(e) => setUploadCategoryId(Number(e.target.value))}
+              disabled={categories.length === 0}
             >
-              {DOCUMENT_CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {categories.length === 0 ? (
+                <option value="">카테고리 로딩 중...</option>
+              ) : (
+                categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.fullPath}
+                  </option>
+                ))
+              )}
             </select>
             <ChevronDown
               size={14}
@@ -295,7 +317,7 @@ function UploadModal({ onClose, onUploaded }: UploadModalProps) {
           </button>
           <button
             type="button"
-            disabled={!uploadFile || isUploading}
+            disabled={!uploadFile || uploadCategoryId === null || isUploading}
             onClick={handleUpload}
             className="flex-1 rounded-xl bg-primary py-2.5 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -340,6 +362,24 @@ export function DocsTab() {
     title: "",
   });
 
+  // 실제 백엔드 카테고리 트리에서 리프 카테고리 목록을 가져온다
+  // (상위 카테고리는 문서에 연결할 수 없음 — DocumentService.PARENT_CATEGORY_NOT_ALLOWED)
+  const [categories, setCategories] = useState<FlatCategory[]>([]);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCategoryTree()
+      .then((res) => setCategories(flattenLeafCategories(res.categories)))
+      .catch((err) => {
+        const msg =
+          err instanceof ApiError
+            ? (ERROR_MESSAGES[err.code] ?? err.message)
+            : "카테고리 목록을 불러올 수 없습니다.";
+        setCategoriesError(msg);
+        setCategories([]);
+      });
+  }, []);
+
   const handleCategoryEdit = useCallback((id: number) => {
     setEditCategoryId((prev) => (prev === id ? null : id));
   }, []);
@@ -352,7 +392,11 @@ export function DocsTab() {
         return;
       }
       setPreviewError(null);
-      setPdfViewer({ open: true, fileUrl: detail.fileUrl, title: detail.title });
+      setPdfViewer({
+        open: true,
+        fileUrl: detail.fileUrl,
+        title: detail.title,
+      });
     } catch (err) {
       const msg =
         err instanceof ApiError
@@ -392,10 +436,7 @@ export function DocsTab() {
         <div className="mb-4 flex flex-wrap gap-2">
           {/* 검색 */}
           <div className="flex min-w-40 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
-            <Search
-              size={14}
-              className="shrink-0 text-muted-foreground"
-            />
+            <Search size={14} className="shrink-0 text-muted-foreground" />
             <input
               className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
               placeholder="문서명 검색..."
@@ -431,9 +472,9 @@ export function DocsTab() {
               className="appearance-none rounded-xl border border-border bg-card px-3 py-2 pr-8 text-[13px] text-foreground outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="all">전체 카테고리</option>
-              {DOCUMENT_CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <option key={c.id} value={String(c.id)}>
-                  {c.name}
+                  {c.fullPath}
                 </option>
               ))}
             </select>
@@ -451,7 +492,7 @@ export function DocsTab() {
               "flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] transition-colors",
               showDeleted
                 ? "border-destructive/30 bg-destructive/5 text-destructive"
-                : "border-border text-muted-foreground"
+                : "border-border text-muted-foreground",
             )}
           >
             <Trash2 size={13} />
@@ -489,8 +530,7 @@ export function DocsTab() {
                   key={doc.id}
                   className={cn(
                     "grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/50",
-                    i < filteredDocs.length - 1 &&
-                      "border-b border-border/40"
+                    i < filteredDocs.length - 1 && "border-b border-border/40",
                   )}
                 >
                   {/* 문서명 */}
@@ -517,14 +557,20 @@ export function DocsTab() {
                         onChange={async (e) => {
                           const newCategoryId = Number(e.target.value);
                           setEditCategoryId(null);
+                          if (newCategoryId === doc.categoryId) return;
                           await updateCategory(doc.id, newCategoryId);
                         }}
+                        disabled={categories.length === 0}
                       >
-                        {DOCUMENT_CATEGORIES.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
+                        {categories.length === 0 ? (
+                          <option value={doc.categoryId}>로딩 중...</option>
+                        ) : (
+                          categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.fullPath}
+                            </option>
+                          ))
+                        )}
                       </select>
                     ) : (
                       <button
@@ -533,7 +579,7 @@ export function DocsTab() {
                         className={cn(
                           "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-all hover:ring-2 hover:ring-primary/20",
                           catStyle.bg,
-                          catStyle.fg
+                          catStyle.fg,
                         )}
                         title="카테고리 수정"
                       >
@@ -549,7 +595,7 @@ export function DocsTab() {
                       className={cn(
                         "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
                         statusCfg.bg,
-                        statusCfg.fg
+                        statusCfg.fg,
                       )}
                     >
                       {statusCfg.icon}
@@ -626,6 +672,11 @@ export function DocsTab() {
           )}
         </div>
 
+        {/* 카테고리 로드 에러 */}
+        {categoriesError && (
+          <p className="mt-2 text-xs text-destructive">{categoriesError}</p>
+        )}
+
         {/* 카테고리 변경 에러 */}
         {updateError && (
           <p className="mt-2 text-xs text-destructive">{updateError}</p>
@@ -645,6 +696,7 @@ export function DocsTab() {
 
       {showUploadModal && (
         <UploadModal
+          categories={categories}
           onClose={() => setShowUploadModal(false)}
           onUploaded={reload}
         />

@@ -28,10 +28,13 @@ export function ChatItemMenu({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      // 삭제 확인 다이얼로그(Radix Portal — DOM상 menuRef 바깥)가 열려 있을 땐
+      // 바깥 클릭 감지를 비활성화해야 다이얼로그 버튼 클릭이 먹힌다.
+      if (deleteDialogOpen) return;
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
-    };
+    };;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !deleteDialogOpen) onClose();

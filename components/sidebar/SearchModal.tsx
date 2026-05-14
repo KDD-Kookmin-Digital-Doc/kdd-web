@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Search, SquarePen, MessageCircle, X } from "lucide-react";
+import { Search, MessageCircle, X } from "lucide-react";
 
 interface ChatHistoryItem {
   id: string;
@@ -28,7 +28,7 @@ export function SearchModal({
   const router = useRouter();
 
   const filtered = chatHistory.filter((item) =>
-    item.title.toLowerCase().includes(query.toLowerCase())
+    item.title.toLowerCase().includes(query.toLowerCase()),
   );
 
   const handleClose = useCallback(() => {
@@ -83,10 +83,7 @@ export function SearchModal({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={handleClose}
-      />
+      <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
 
       <motion.div
         ref={modalRef}
@@ -123,19 +120,6 @@ export function SearchModal({
             animate={{ opacity: 1 }}
             transition={{ delay: 0.15, duration: 0.2 }}
           >
-            {query.trim() === "" && (
-              <button
-                onClick={() => {
-                  router.push("/chat");
-                  handleClose();
-                }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
-              >
-                <SquarePen className="size-4" />
-                새 채팅
-              </button>
-            )}
-
             {filtered.length > 0 && (
               <>
                 <p className="px-3 pt-3 pb-1 text-xs text-muted-foreground">

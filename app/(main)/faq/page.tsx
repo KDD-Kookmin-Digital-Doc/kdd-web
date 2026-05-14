@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -14,8 +14,11 @@ import { FAQList } from "@/components/faq/FAQList";
 import { FAQTopicTree } from "@/components/faq/FAQTopicTree";
 
 const PDFViewer = dynamic(
-  () => import("@/components/shared/PDFViewer").then((m) => ({ default: m.PDFViewer })),
-  { ssr: false }
+  () =>
+    import("@/components/shared/PDFViewer").then((m) => ({
+      default: m.PDFViewer,
+    })),
+  { ssr: false },
 );
 
 interface PDFViewerState {
@@ -81,12 +84,16 @@ export default function FaqPage() {
     setPdfViewer((prev) => ({ ...prev, open: false }));
   };
 
-  const newCount = filteredFAQs.filter((f) => {
-    const diffDays = Math.floor(
-      (Date.now() - new Date(f.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return diffDays <= 7;
-  }).length;
+  const newCount = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity -- Date.now는 관측용(7일 이내 FAQ 뱃지 계산)이며 결정적 출력이 필요 없음
+    const now = Date.now();
+    return filteredFAQs.filter((f) => {
+      const diffDays = Math.floor(
+        (now - new Date(f.createdAt).getTime()) / (1000 * 60 * 60 * 24),
+      );
+      return diffDays <= 7;
+    }).length;
+  }, [filteredFAQs]);
 
   return (
     <div className="flex h-dvh flex-col bg-background">
@@ -114,24 +121,24 @@ export default function FaqPage() {
         <button
           className={cn(
             "px-3 py-3 text-sm font-medium transition-colors",
-            viewMode === "list"
-              ? "border-b-2 border-primary text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-          onClick={() => setViewMode("list")}
-        >
-          목록
-        </button>
-        <button
-          className={cn(
-            "px-3 py-3 text-sm font-medium transition-colors",
             viewMode === "tree"
               ? "border-b-2 border-primary text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground",
           )}
           onClick={() => setViewMode("tree")}
         >
           카테고리별
+        </button>
+        <button
+          className={cn(
+            "px-3 py-3 text-sm font-medium transition-colors",
+            viewMode === "list"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+          onClick={() => setViewMode("list")}
+        >
+          전체 질문 목록
         </button>
       </div>
 
@@ -156,7 +163,9 @@ export default function FaqPage() {
       {/* PDF 에러 메시지 */}
       {pdfError && (
         <div className="shrink-0 bg-destructive/5 px-4 py-2">
-          <p className="mx-auto max-w-4xl text-sm text-destructive">{pdfError}</p>
+          <p className="mx-auto max-w-4xl text-sm text-destructive">
+            {pdfError}
+          </p>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   ArrowLeft,
   Search,
@@ -48,9 +48,10 @@ function CategoryTreeNode({
   const isExpanded = expandedNodes.has(node.categoryId);
   const isSelected = selectedCategoryId === node.categoryId;
 
-  const inlineDocs = isExpanded && !hasChildren
-    ? (categoryDocumentsMap.get(node.categoryId) ?? null)
-    : null;
+  const inlineDocs =
+    isExpanded && !hasChildren
+      ? (categoryDocumentsMap.get(node.categoryId) ?? null)
+      : null;
 
   const handleClick = () => {
     onToggleNode(node.categoryId);
@@ -68,7 +69,7 @@ function CategoryTreeNode({
             ? "bg-primary/8 text-primary font-medium shadow-sm"
             : isSelected
               ? "bg-accent text-primary font-medium"
-              : "text-foreground hover:bg-secondary/50"
+              : "text-foreground hover:bg-secondary/50",
         )}
         aria-expanded={isExpanded}
       >
@@ -82,7 +83,7 @@ function CategoryTreeNode({
         <ChevronRight
           className={cn(
             "size-4 shrink-0 transition-transform duration-200",
-            isExpanded ? "rotate-90 text-primary" : "text-muted-foreground"
+            isExpanded ? "rotate-90 text-primary" : "text-muted-foreground",
           )}
         />
         {isExpanded ? (
@@ -91,7 +92,7 @@ function CategoryTreeNode({
           <Folder
             className={cn(
               "size-4 shrink-0",
-              isSelected ? "text-primary" : "text-muted-foreground"
+              isSelected ? "text-primary" : "text-muted-foreground",
             )}
           />
         )}
@@ -138,7 +139,9 @@ function CategoryTreeNode({
                 className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-secondary/50"
               >
                 <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-                <span className="flex-1 truncate text-foreground">{doc.title}</span>
+                <span className="flex-1 truncate text-foreground">
+                  {doc.title}
+                </span>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {doc.updatedAt}
                 </span>
@@ -156,7 +159,13 @@ function CategoryTreeNode({
 // ──────────────────────────────────────────────
 
 interface DocRowProps {
-  document: { documentId: string; title: string; category: string; updatedAt: string; viewCount?: number };
+  document: {
+    documentId: string;
+    title: string;
+    category: string;
+    updatedAt: string;
+    viewCount?: number;
+  };
   onClick: () => void;
 }
 
@@ -208,6 +217,7 @@ function DocRow({ document, onClick }: DocRowProps) {
 
 export default function ResourcesPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
 
@@ -232,32 +242,58 @@ export default function ResourcesPage() {
     totalPages,
     isLoading,
     isPopularLoading,
+    listError,
+    popularError,
   } = useDocuments();
 
-  // tabParam으로 초기 탭 설정 (마운트 1회)
+  // URL의 tab 파라미터 ↔ activeTab 동기화
+  // 뒤로가기/북마크 등으로 URL이 먼저 바뀌는 경우를 처리 (이전 탭 복원)
   useEffect(() => {
-    if (tabParam === "list") setActiveTab("list");
-    else if (tabParam === "popular") setActiveTab("popular");
-    else if (tabParam === "tree") setActiveTab("tree");
-    // setActiveTab은 안정적인 콜백이므로 deps 생략 가능
+    if (tabParam === "list" || tabParam === "popular" || tabParam === "tree") {
+      if (tabParam !== activeTab) setActiveTab(tabParam);
+    }
+    // 의도: tabParam 변경 시에만 activeTab을 끌어올림. 반대 방향은 handleTabChange가 담당.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tabParam]);
 
-  const handleDocumentClick = useCallback((documentId: string) => {
-    router.push(`/resources/${documentId}`);
-  }, [router]);
+  // 탭 클릭 시 상태 + URL을 함께 갱신 (뒤로가기 시 복원 가능하도록)
+  const handleTabChange = useCallback(
+    (tab: "popular" | "tree" | "list") => {
+      setActiveTab(tab);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", tab);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [setActiveTab, searchParams, router, pathname],
+  );
 
-  const handleSelectCategory = useCallback((id: string | null) => {
-    setSelectedCategoryId(id);
-  }, [setSelectedCategoryId]);
+  const handleDocumentClick = useCallback(
+    (documentId: string) => {
+      router.push(`/resources/${documentId}`);
+    },
+    [router],
+  );
+
+  const handleSelectCategory = useCallback(
+    (id: string | null) => {
+      setSelectedCategoryId(id);
+    },
+    [setSelectedCategoryId],
+  );
 
   const rootCategoryNames = useMemo(
     () => categoryTree.map((n) => n.name),
-    [categoryTree]
+    [categoryTree],
   );
 
-  const totalPagesCalc = Math.max(totalPages, Math.ceil(documents.length / PAGE_SIZE));
-  const pagedDocuments = documents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPagesCalc = Math.max(
+    totalPages,
+    Math.ceil(documents.length / PAGE_SIZE),
+  );
+  const pagedDocuments = documents.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
 
   return (
     <div className="flex h-dvh flex-col bg-background">
@@ -276,7 +312,11 @@ export default function ResourcesPage() {
       {/* 탭 바 */}
       <div className="flex shrink-0 border-b border-border bg-background px-4">
         {(["popular", "tree", "list"] as const).map((tab) => {
-          const labels = { popular: "인기 문서", tree: "카테고리 탐색", list: "문서 목록" };
+          const labels = {
+            popular: "인기 문서",
+            tree: "카테고리 탐색",
+            list: "전체 문서 목록",
+          };
           return (
             <button
               key={tab}
@@ -284,9 +324,9 @@ export default function ResourcesPage() {
                 "px-3 py-3 text-sm font-medium transition-colors",
                 activeTab === tab
                   ? "border-b-2 border-primary text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(tab)}
             >
               {labels[tab]}
             </button>
@@ -297,15 +337,17 @@ export default function ResourcesPage() {
       {/* 콘텐츠 영역 */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-4xl px-4 py-4">
-
           {/* ── 카테고리 탐색 탭 ── */}
           {activeTab === "tree" && (
             <div>
               <p className="mb-4 text-sm text-muted-foreground">
-                카테고리를 선택하면 해당 카테고리에 속한 문서를 확인할 수 있습니다.
+                카테고리를 선택하면 해당 카테고리에 속한 문서를 확인할 수
+                있습니다.
               </p>
               {categoryTree.length === 0 ? (
-                <p className="text-sm text-muted-foreground">카테고리를 불러오는 중...</p>
+                <p className="text-sm text-muted-foreground">
+                  카테고리를 불러오는 중...
+                </p>
               ) : (
                 <div className="flex flex-col gap-0.5">
                   {categoryTree.map((node) => (
@@ -347,7 +389,7 @@ export default function ResourcesPage() {
                       "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                       !selectedCategoryId
                         ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-secondary"
+                        : "bg-muted text-muted-foreground hover:bg-secondary",
                     )}
                     onClick={() => setSelectedCategoryId(null)}
                   >
@@ -362,9 +404,11 @@ export default function ResourcesPage() {
                           "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                           selectedCategoryId === node?.categoryId
                             ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground hover:bg-secondary"
+                            : "bg-muted text-muted-foreground hover:bg-secondary",
                         )}
-                        onClick={() => setSelectedCategoryId(node?.categoryId ?? null)}
+                        onClick={() =>
+                          setSelectedCategoryId(node?.categoryId ?? null)
+                        }
                       >
                         {cat}
                       </button>
@@ -373,7 +417,9 @@ export default function ResourcesPage() {
                 </div>
                 <select
                   value={sort}
-                  onChange={(e) => setSort(e.target.value as "latest" | "popular")}
+                  onChange={(e) =>
+                    setSort(e.target.value as "latest" | "popular")
+                  }
                   className="shrink-0 rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
                   <option value="latest">최신순</option>
@@ -385,7 +431,11 @@ export default function ResourcesPage() {
                 총 {totalCount || documents.length}개 문서
               </p>
 
-              {isLoading ? (
+              {listError ? (
+                <div className="flex items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 py-16 text-sm text-destructive">
+                  {listError}
+                </div>
+              ) : isLoading ? (
                 <div className="flex items-center justify-center rounded-xl border border-border py-16 text-sm text-muted-foreground">
                   불러오는 중...
                 </div>
@@ -415,20 +465,22 @@ export default function ResourcesPage() {
                   >
                     이전
                   </button>
-                  {Array.from({ length: totalPagesCalc }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      className={cn(
-                        "size-7 rounded text-xs transition-colors",
-                        p === page
-                          ? "bg-primary text-primary-foreground font-medium"
-                          : "text-muted-foreground hover:bg-secondary"
-                      )}
-                      onClick={() => setPage(p)}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPagesCalc }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        className={cn(
+                          "size-7 rounded text-xs transition-colors",
+                          p === page
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "text-muted-foreground hover:bg-secondary",
+                        )}
+                        onClick={() => setPage(p)}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  )}
                   <button
                     className="rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-40"
                     onClick={() => setPage(Math.min(totalPagesCalc, page + 1))}
@@ -450,7 +502,11 @@ export default function ResourcesPage() {
                   인기 문서
                 </span>
               </div>
-              {isPopularLoading ? (
+              {popularError ? (
+                <div className="flex items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 py-16 text-sm text-destructive">
+                  {popularError}
+                </div>
+              ) : isPopularLoading ? (
                 <div className="flex items-center justify-center rounded-xl border border-border py-16 text-sm text-muted-foreground">
                   불러오는 중...
                 </div>
@@ -470,14 +526,15 @@ export default function ResourcesPage() {
                         updatedAt: doc.updatedAt,
                         viewCount: doc.viewCount,
                       }}
-                      onClick={() => handleDocumentClick(String(doc.documentId))}
+                      onClick={() =>
+                        handleDocumentClick(String(doc.documentId))
+                      }
                     />
                   ))}
                 </div>
               )}
             </div>
           )}
-
         </div>
       </div>
     </div>
