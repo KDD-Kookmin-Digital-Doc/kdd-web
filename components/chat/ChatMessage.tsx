@@ -8,12 +8,13 @@ import { ConfidenceBadge } from "./ConfidenceBadge";
 import { SourceCard } from "./SourceCard";
 import { StreamingMessage } from "./StreamingMessage";
 import { SuggestedQuestions } from "./SuggestedQuestions";
+import { AnswerWithCitations } from "./AnswerWithCitations";
 
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
   onSelectQuestion?: (question: string) => void;
-  onOpenPDF?: (documentId: number, page: number) => void;
+  onOpenPDF?: (documentId: number, page: number, chunkId?: number) => void;
 }
 
 export function ChatMessage({
@@ -24,14 +25,40 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  const hasSources = !isUser && message.sources && message.sources.length > 0;
   const hasSuggestedQuestions =
     !isUser &&
     message.suggestedQuestions &&
     message.suggestedQuestions.length > 0;
+  const hasRawSources =
+    !isUser && message.rawSources && message.rawSources.length > 0;
+  // rawSources가 있으면 인라인 citation으로 출처 표시 → 하단 출처 카드 불필요
+  // rawSources가 없는 레거시 메시지만 기존 하단 출처 카드 표시
+  const showLegacySourceCards =
+    !isUser && !hasRawSources && message.sources && message.sources.length > 0;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(message.content);
+    // 복사 시 {{N}} 마커 제거
+    const clean = message.content
+      .replace(/\s*\{\{\d+\}\}\s*/g, " ")
+      .replace(/\s+([.,!?])/g, "$1")
+      .trim();
+    navigator.clipboard.writeText(clean);
+  };
+
+  const renderContent = () => {
+    if (isStreaming && !message.content) {
+      return <StreamingMessage />;
+    }
+    if (!isUser && hasRawSources) {
+      return (
+        <AnswerWithCitations
+          content={message.content}
+          rawSources={message.rawSources!}
+          onOpenPDF={onOpenPDF}
+        />
+      );
+    }
+    return message.content;
   };
 
   return (
@@ -39,7 +66,7 @@ export function ChatMessage({
       <div
         className={cn(
           "max-w-[85%] md:max-w-[70%]",
-          isUser && "flex flex-col items-end"
+          isUser && "flex flex-col items-end",
         )}
       >
         {!isUser && message.confidence && (
@@ -53,17 +80,14 @@ export function ChatMessage({
             "rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
             isUser
               ? "bg-primary text-primary-foreground"
-              : "bg-secondary text-foreground"
+              : "bg-secondary text-foreground",
           )}
         >
-          {isStreaming && !message.content ? (
-            <StreamingMessage />
-          ) : (
-            message.content
-          )}
+          {renderContent()}
         </div>
 
-        {hasSources && (
+        {/* 레거시 메시지 (rawSources 없음) — 기존 하단 출처 카드 유지 */}
+        {showLegacySourceCards && (
           <div className="mt-2 w-full">
             <button
               onClick={() => setSourcesOpen((prev) => !prev)}

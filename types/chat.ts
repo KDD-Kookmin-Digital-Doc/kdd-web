@@ -6,6 +6,7 @@ export interface Source {
   documentId: number;
   documentTitle: string;
   page: number;
+  chunkId?: number;
 }
 
 export interface ChatMessage {
@@ -14,6 +15,7 @@ export interface ChatMessage {
   content: string;
   confidence?: ConfidenceLevel;
   sources?: Source[];
+  rawSources?: Source[]; // 본문 마커 {{N}} 매핑용 (dedup X, AI 송신 순서 그대로)
   suggestedQuestions?: string[];
   createdAt: string;
 }

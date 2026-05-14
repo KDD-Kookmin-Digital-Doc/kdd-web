@@ -6,6 +6,7 @@ export interface SourceRef {
   documentId: number;
   documentTitle: string;
   page: number;
+  chunkId: number;
 }
 
 export interface SSEMetaEvent {
@@ -23,6 +24,7 @@ export interface SSETextEvent {
 export interface SSEDoneEvent {
   type: "done";
   messageId: number; // 백엔드 Long 대응
+  remaining?: number; // 남은 일일 채팅 횟수
 }
 
 export interface SSEFallbackEvent {
@@ -58,6 +60,7 @@ export interface ChatMessage {
   content: string;
   confidence?: ConfidenceLevel;
   sources?: SourceRef[];
+  rawSources?: SourceRef[]; // 본문 마커 {{N}} 매핑용 (dedup X, AI 송신 순서 그대로)
   suggestedQuestions?: string[];
   createdAt: string;
 }
@@ -108,6 +111,7 @@ export interface ChatMessageSourceResponse {
   documentId: number;
   documentTitle: string;
   page: number;
+  chunkId: number;
 }
 
 /** 백엔드 ChatSessionUpdateRequest 대응 */

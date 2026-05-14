@@ -9,7 +9,7 @@ interface ChatMessageListProps {
   messages: ChatMessageType[];
   isStreaming?: boolean;
   onSelectQuestion?: (question: string) => void;
-  onOpenPDF?: (documentId: number, page: number) => void;
+  onOpenPDF?: (documentId: number, page: number, chunkId?: number) => void;
 }
 
 export function ChatMessageList({

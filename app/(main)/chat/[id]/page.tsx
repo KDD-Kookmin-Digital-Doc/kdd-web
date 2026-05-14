@@ -8,6 +8,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { ChatWelcome } from "@/components/chat/ChatWelcome";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { FallbackMessage } from "@/components/chat/FallbackMessage";
+import { AnswerWithCitations } from "@/components/chat/AnswerWithCitations";
 import { useChatContext } from "@/components/chat/ChatContext";
 import { useSSEStream } from "@/hooks/useSSEStream";
 import { getSessionDetail } from "@/lib/api/services/chat.service";
@@ -18,8 +19,11 @@ import type { SSEEvent, ChatMessageResponse } from "@/types/api/chat";
 // react-pdf는 DOMMatrix 같은 브라우저 전용 API를 모듈 평가 시점에 참조하므로
 // SSR을 비활성화한 동적 import로만 로드한다.
 const PDFViewer = dynamic(
-  () => import("@/components/shared/PDFViewer").then((m) => ({ default: m.PDFViewer })),
-  { ssr: false }
+  () =>
+    import("@/components/shared/PDFViewer").then((m) => ({
+      default: m.PDFViewer,
+    })),
+  { ssr: false },
 );
 
 type Props = { params: Promise<{ id: string }> };
@@ -35,6 +39,7 @@ function buildMessagesFromEvents(events: SSEEvent[]): Partial<ChatMessage> {
   let content = "";
   let confidence: ChatMessage["confidence"] | undefined;
   let sources: ChatMessage["sources"] | undefined;
+  let rawSources: ChatMessage["rawSources"] | undefined;
   let suggestedQuestions: string[] | undefined;
 
   for (const event of events) {
@@ -43,6 +48,15 @@ function buildMessagesFromEvents(events: SSEEvent[]): Partial<ChatMessage> {
     } else if (event.type === "meta") {
       confidence = event.confidence;
       if (event.sources) {
+        // 본문 마커 {{N}} → rawSources[N-1] 매핑용. AI 송신 순서·길이 그대로 보존.
+        rawSources = event.sources.map((s) => ({
+          documentId: s.documentId,
+          documentTitle: s.documentTitle,
+          page: s.page,
+          chunkId: s.chunkId,
+        }));
+
+        // 메시지 밑 출처 카드용. 기존 (documentId, page) dedup 유지.
         const seen = new Map<string, Source>();
         for (const s of event.sources) {
           const key = `${s.documentId}-${s.page}`;
@@ -51,6 +65,7 @@ function buildMessagesFromEvents(events: SSEEvent[]): Partial<ChatMessage> {
               documentId: s.documentId,
               documentTitle: s.documentTitle,
               page: s.page,
+              chunkId: s.chunkId,
             });
           }
         }
@@ -61,20 +76,34 @@ function buildMessagesFromEvents(events: SSEEvent[]): Partial<ChatMessage> {
     }
   }
 
-  return { content, confidence, sources, suggestedQuestions };
+  return { content, confidence, sources, rawSources, suggestedQuestions };
 }
 
 function mapApiMessageToLocal(msg: ChatMessageResponse): ChatMessage {
+  // 재조회 응답은 BE가 chat_message_sources에 chunk 단위로 저장한 데이터를
+  // 그대로 반환한다 (BE @OrderBy("id ASC")로 저장 순서 == AI 송신 순서 보장).
+  // 본문 마커 매핑용 rawSources와 출처 카드용 sources(page dedup) 둘 다 구성.
+  const rawSources: Source[] = msg.sources.map((s) => ({
+    documentId: s.documentId,
+    documentTitle: s.documentTitle,
+    page: s.page,
+    chunkId: s.chunkId,
+  }));
+
+  const seen = new Map<string, Source>();
+  for (const s of rawSources) {
+    const key = `${s.documentId}-${s.page}`;
+    if (!seen.has(key)) seen.set(key, s);
+  }
+  const dedupedSources = Array.from(seen.values());
+
   return {
     messageId: String(msg.messageId),
     role: msg.role,
     content: msg.content,
     confidence: (msg.confidence as ChatMessage["confidence"]) ?? undefined,
-    sources: msg.sources.map((s) => ({
-      documentId: s.documentId,
-      documentTitle: s.documentTitle,
-      page: s.page,
-    })),
+    sources: dedupedSources,
+    rawSources,
     createdAt: msg.createdAt,
   };
 }
@@ -112,7 +141,7 @@ export default function ChatDetailPage({ params }: Props) {
         if (cancelled) return;
         if (res.messages.length === 0) return;
         setMessages((prev) =>
-          prev.length === 0 ? res.messages.map(mapApiMessageToLocal) : prev
+          prev.length === 0 ? res.messages.map(mapApiMessageToLocal) : prev,
         );
       })
       .catch(() => {
@@ -147,6 +176,7 @@ export default function ChatDetailPage({ params }: Props) {
       content: partial.content,
       confidence: partial.confidence,
       sources: partial.sources,
+      rawSources: partial.rawSources,
       suggestedQuestions: partial.suggestedQuestions,
       createdAt: new Date().toISOString(),
     };
@@ -162,7 +192,7 @@ export default function ChatDetailPage({ params }: Props) {
           // 제목 동기화 실패는 UX에 영향 없음 — 사이드바 제목이 임시값으로 유지됨
         });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStreaming]);
 
   const handleSend = (content: string) => {
@@ -186,7 +216,11 @@ export default function ChatDetailPage({ params }: Props) {
     sendMessage(trimmed);
   };
 
-  const handleOpenPDF = async (documentId: number, page: number) => {
+  const handleOpenPDF = async (
+    documentId: number,
+    page: number,
+    _chunkId?: number,
+  ) => {
     try {
       const detail = await getDocumentDetail(documentId);
       if (!detail.fileUrl) return;
@@ -218,7 +252,7 @@ export default function ChatDetailPage({ params }: Props) {
         router.replace(`/chat/${id}`);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionLoaded]);
 
   const isEmpty = messages.length === 0 && !isStreaming;
@@ -228,6 +262,20 @@ export default function ChatDetailPage({ params }: Props) {
     .filter((e) => e.type === "text")
     .map((e) => (e.type === "text" ? e.content : ""))
     .join("");
+
+  // 스트리밍 중 rawSources (meta 이벤트에서 추출)
+  const streamingRawSources: Source[] = (() => {
+    const metaEvent = events.find((e) => e.type === "meta");
+    if (metaEvent?.type === "meta" && metaEvent.sources) {
+      return metaEvent.sources.map((s) => ({
+        documentId: s.documentId,
+        documentTitle: s.documentTitle,
+        page: s.page,
+        chunkId: s.chunkId,
+      }));
+    }
+    return [];
+  })();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -242,7 +290,9 @@ export default function ChatDetailPage({ params }: Props) {
             <div className="mx-auto max-w-3xl px-4 pt-6">
               <ChatMessageList
                 messages={messages}
-                isStreaming={isStreaming && !streamingText && !fallbackEvent && !errorEvent}
+                isStreaming={
+                  isStreaming && !streamingText && !fallbackEvent && !errorEvent
+                }
                 onSelectQuestion={handleSend}
                 onOpenPDF={handleOpenPDF}
               />
@@ -250,7 +300,16 @@ export default function ChatDetailPage({ params }: Props) {
               {isStreaming && streamingText && (
                 <div className="mt-6 flex justify-start">
                   <div className="max-w-[85%] rounded-2xl bg-secondary px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-foreground md:max-w-[70%]">
-                    {streamingText}
+                    {streamingRawSources.length > 0 ? (
+                      <AnswerWithCitations
+                        content={streamingText}
+                        rawSources={streamingRawSources}
+                        onOpenPDF={handleOpenPDF}
+                        streaming
+                      />
+                    ) : (
+                      streamingText
+                    )}
                   </div>
                 </div>
               )}
@@ -268,10 +327,7 @@ export default function ChatDetailPage({ params }: Props) {
 
               {!isStreaming && errorEvent && (
                 <div className="mt-6">
-                  <FallbackMessage
-                    type="error"
-                    message={errorEvent.message}
-                  />
+                  <FallbackMessage type="error" message={errorEvent.message} />
                 </div>
               )}
             </div>

@@ -238,6 +238,7 @@ export const MOCK_SSE_SEQUENCE_HIGH: SSEEvent[] = [
         documentId: 1,
         documentTitle: "학칙 제35조 (휴학)",
         page: 12,
+        chunkId: 101,
       },
     ],
   } satisfies SSEMetaEvent,
@@ -247,7 +248,7 @@ export const MOCK_SSE_SEQUENCE_HIGH: SSEEvent[] = [
   } satisfies SSETextEvent,
   {
     type: "text",
-    content: "3월 3일부터 3월 14일까지입니다.",
+    content: "3월 3일부터 3월 14일까지입니다.{{1}}",
   } satisfies SSETextEvent,
   {
     type: "text",
@@ -255,7 +256,7 @@ export const MOCK_SSE_SEQUENCE_HIGH: SSEEvent[] = [
   } satisfies SSETextEvent,
   {
     type: "text",
-    content: "연속 2학기까지 신청 가능합니다.",
+    content: "연속 2학기까지 신청 가능합니다.{{1}}",
   } satisfies SSETextEvent,
   {
     type: "text",

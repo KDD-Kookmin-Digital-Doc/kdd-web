@@ -4,12 +4,12 @@ import type { Source } from "@/types/chat";
 interface SourceCardProps {
   source: Source;
   index?: number;
-  onOpenPDF?: (documentId: number, page: number) => void;
+  onOpenPDF?: (documentId: number, page: number, chunkId?: number) => void;
 }
 
 export function SourceCard({ source, index, onOpenPDF }: SourceCardProps) {
   const handleClick = () => {
-    onOpenPDF?.(source.documentId, source.page);
+    onOpenPDF?.(source.documentId, source.page, source.chunkId);
   };
 
   return (
@@ -19,9 +19,7 @@ export function SourceCard({ source, index, onOpenPDF }: SourceCardProps) {
       disabled={!onOpenPDF}
       className={cn(
         "flex w-full items-center gap-3 rounded-lg bg-primary/5 p-3 text-left transition-colors",
-        onOpenPDF
-          ? "cursor-pointer hover:bg-primary/10"
-          : "cursor-default"
+        onOpenPDF ? "cursor-pointer hover:bg-primary/10" : "cursor-default",
       )}
     >
       {index !== undefined && (
