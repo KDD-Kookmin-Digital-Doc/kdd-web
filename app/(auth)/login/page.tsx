@@ -214,11 +214,22 @@ function LoginPageContent() {
     setLoginError(null);
     try {
       const profileData = buildProfileData();
-      await createProfile(profileData);
-      setAuthCookies(null, true);
+      const result = await createProfile(profileData);
+      setAuthCookies(result.role, true);
       router.push("/chat");
     } catch (error) {
       if (error instanceof ApiError) {
+        // 이미 프로필이 완료된 경우 바로 /chat으로 이동
+        if (error.code === "PROFILE_ALREADY_COMPLETED") {
+          try {
+            const me = await getMyInfo();
+            setAuthCookies(me.role, true);
+          } catch {
+            setAuthCookies("user", true);
+          }
+          router.replace("/chat");
+          return;
+        }
         setLoginError(ERROR_MESSAGES[error.code] ?? error.message);
       } else {
         setLoginError("프로필 저장 중 오류가 발생했습니다.");

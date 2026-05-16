@@ -43,7 +43,7 @@
 | admissionYear | number \| null | 입학년도 (학생만) |
 | academicStatus | string \| null | "enrolled" \| "on_leave" \| "returning" (학생만) |
 | additionalInfo | string \| null | 추가 정보 (학생만) |
-| staffDepartment | string \| null | 소속 부서 (교직원만) |
+| staffDepartment | string \| null | "student_support" \| "academic_affairs" \| "admissions" \| "industry_cooperation" \| "international_office" \| "general_affairs" \| "other" (교직원만) |
 | jobDescription | string \| null | 담당 업무 (교직원만) |
 
 ### 에러 응답

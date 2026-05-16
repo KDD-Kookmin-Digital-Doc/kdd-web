@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { Settings, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { getDefaultChatLimit, updateDefaultChatLimit } from "@/lib/api/services/admin.service";
 
 export function DefaultLimitCard() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [defaultLimit, setDefaultLimit] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -15,8 +17,9 @@ export function DefaultLimitCard() {
   const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
     loadDefaultLimit();
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   async function loadDefaultLimit() {
     setLoading(true);

@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Search, Users, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { UserTable } from "@/components/admin/UserTable";
 import { LimitEditModal } from "@/components/admin/LimitEditModal";
 import { BulkLimitModal } from "@/components/admin/BulkLimitModal";
@@ -32,6 +33,8 @@ const ROLE_OPTIONS = [
 // ─── UsersTab 메인 ──────────────────────────────────────────────────────────
 
 export function UsersTab() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
   // ── 상태 ──
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [page, setPage] = useState(0);
@@ -87,9 +90,10 @@ export function UsersTab() {
 
   // ── 마운트 시 초기 로드 ──
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
     fetchUsers(page, userTypeFilter, roleFilter, searchQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, userTypeFilter, roleFilter, searchQuery]);
+  }, [page, userTypeFilter, roleFilter, searchQuery, authLoading, isAuthenticated]);
 
   // ── 필터 변경 핸들러 (page 초기화) ──
   function handleUserTypeChange(value: string) {

@@ -389,3 +389,33 @@ export async function updateDefaultChatLimit(
     req,
   );
 }
+
+// ── 관리자 테스트 전용 ─────────────────────────────────────────
+
+export interface ResetMyProfileResponse {
+  userId: number;
+  email: string;
+  role: string;
+  profileCompleted: boolean;
+  deletedStudentProfile: boolean;
+  deletedStaffProfile: boolean;
+}
+
+export async function resetMyProfile(): Promise<ResetMyProfileResponse> {
+  if (USE_MOCK) {
+    await delay(300);
+    return {
+      userId: 1,
+      email: 'admin@kookmin.ac.kr',
+      role: 'admin',
+      profileCompleted: false,
+      deletedStudentProfile: true,
+      deletedStaffProfile: false,
+    };
+  }
+  return apiClient.post<ResetMyProfileResponse>(
+    '/admin/test/reset-my-profile',
+    undefined,
+    { params: { confirm: 'RESET-MY-PROFILE' } },
+  );
+}

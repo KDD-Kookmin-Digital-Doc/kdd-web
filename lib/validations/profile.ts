@@ -71,13 +71,12 @@ export const studentInfoSchema = z
 export const staffInfoSchema = z.object({
   staffDepartment: z.enum(
     [
+      "student_support",
       "academic_affairs",
-      "student_affairs",
+      "admissions",
+      "industry_cooperation",
+      "international_office",
       "general_affairs",
-      "planning",
-      "sw_college",
-      "ai_college",
-      "library",
       "other",
     ],
     { message: "소속 부서를 선택해주세요" }
