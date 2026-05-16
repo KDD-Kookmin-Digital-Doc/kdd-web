@@ -27,8 +27,8 @@ export function ResetUsageDialog({ open, onOpenChange, user, onSuccess, onError 
     if (!user) return;
     setSubmitting(true);
     try {
-      await resetUserUsage(user.userId);
-      onSuccess(user.userId);
+      await resetUserUsage(user.id);
+      onSuccess(user.id);
       onOpenChange(false);
     } catch {
       onOpenChange(false);

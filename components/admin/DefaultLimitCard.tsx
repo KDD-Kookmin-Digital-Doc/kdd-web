@@ -23,7 +23,7 @@ export function DefaultLimitCard() {
     setLoadError(false);
     try {
       const res = await getDefaultChatLimit();
-      setDefaultLimit(res.defaultDailyChatLimit);
+      setDefaultLimit(res.defaultChatLimit);
     } catch {
       setLoadError(true);
     } finally {
@@ -51,8 +51,8 @@ export function DefaultLimitCard() {
     setSubmitting(true);
     setUpdateError(null);
     try {
-      const res = await updateDefaultChatLimit({ defaultDailyChatLimit: numValue });
-      setDefaultLimit(res.defaultDailyChatLimit);
+      const res = await updateDefaultChatLimit({ defaultChatLimit: numValue });
+      setDefaultLimit(res.defaultChatLimit);
       setEditing(false);
     } catch {
       setUpdateError("기본 한도 변경에 실패했습니다.");

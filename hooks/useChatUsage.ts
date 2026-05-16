@@ -51,8 +51,8 @@ export function useChatUsage(): UseChatUsageReturn {
       const data = await getChatUsage();
       if (!mountedRef.current) return;
       setRemainingState(data.remaining);
-      setDailyLimit(data.dailyLimit);
-      setUsedToday(data.usedToday);
+      setDailyLimit(data.dailyChatLimit);
+      setUsedToday(data.todayUsed);
       setError(false);
     } catch {
       if (!mountedRef.current) return;
@@ -86,8 +86,8 @@ export function useChatUsage(): UseChatUsageReturn {
         const data = await getChatUsage();
         if (!mountedRef.current) return;
         setRemainingState(data.remaining);
-        setDailyLimit(data.dailyLimit);
-        setUsedToday(data.usedToday);
+        setDailyLimit(data.dailyChatLimit);
+        setUsedToday(data.todayUsed);
         setError(false);
         // 성공 시 다음 자정 타이머 재설정
         scheduleResetTimer();
@@ -101,8 +101,8 @@ export function useChatUsage(): UseChatUsageReturn {
             const data = await getChatUsage();
             if (!mountedRef.current) return;
             setRemainingState(data.remaining);
-            setDailyLimit(data.dailyLimit);
-            setUsedToday(data.usedToday);
+            setDailyLimit(data.dailyChatLimit);
+            setUsedToday(data.todayUsed);
             setError(false);
           } catch {
             if (!mountedRef.current) return;
@@ -125,8 +125,8 @@ export function useChatUsage(): UseChatUsageReturn {
         const data = await getChatUsage();
         if (!mountedRef.current) return;
         setRemainingState(data.remaining);
-        setDailyLimit(data.dailyLimit);
-        setUsedToday(data.usedToday);
+        setDailyLimit(data.dailyChatLimit);
+        setUsedToday(data.todayUsed);
         setError(false);
       } catch {
         if (!mountedRef.current) return;

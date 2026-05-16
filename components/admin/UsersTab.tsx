@@ -136,7 +136,7 @@ export function UsersTab() {
 
   function handleLimitEditSuccess(userId: number, newLimit: number) {
     setUsers((prev) =>
-      prev.map((u) => (u.userId === userId ? { ...u, dailyChatLimit: newLimit } : u)),
+      prev.map((u) => (u.id === userId ? { ...u, dailyChatLimit: newLimit } : u)),
     );
     setEditUser(null);
   }
@@ -146,7 +146,7 @@ export function UsersTab() {
   }
 
   function handleResetSuccess(userId: number) {
-    setUsers((prev) => prev.map((u) => u.userId === userId ? { ...u, usedToday: 0 } : u));
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, todayUsed: 0 } : u));
     setResetUser(null);
   }
 
@@ -161,7 +161,7 @@ export function UsersTab() {
 
   function handleBulkSuccess(newLimit: number) {
     setUsers((prev) =>
-      prev.map((u) => (selectedIds.has(u.userId) ? { ...u, dailyChatLimit: newLimit } : u)),
+      prev.map((u) => (selectedIds.has(u.id) ? { ...u, dailyChatLimit: newLimit } : u)),
     );
     const count = selectedIds.size;
     setSelectedIds(new Set());
