@@ -9,6 +9,11 @@ import {
   MOCK_SSE_FALLBACK,
 } from "@/constants/mock-chat";
 
+interface UseSSEStreamOptions {
+  onDone?: (remaining?: number) => void;
+  onRateLimit?: () => void;
+}
+
 interface UseSSEStreamReturn {
   events: SSEEvent[];
   isStreaming: boolean;
@@ -32,7 +37,7 @@ const previewTail = (s: string, n = 60) => {
   return JSON.stringify(tail);
 };
 
-export function useSSEStream(sessionId: string): UseSSEStreamReturn {
+export function useSSEStream(sessionId: string, options?: UseSSEStreamOptions): UseSSEStreamReturn {
   const [events, setEvents] = useState<SSEEvent[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,12 +70,15 @@ export function useSSEStream(sessionId: string): UseSSEStreamReturn {
       const delayMs = 100 + index * (150 + Math.random() * 150);
       setTimeout(() => {
         setEvents((prev) => [...prev, event]);
+        if (event.type === "done") {
+          options?.onDone?.(event.remaining);
+        }
         if (index === sequence.length - 1) {
           setIsStreaming(false);
         }
       }, delayMs);
     });
-  }, []);
+  }, [options]);
 
   const sendMessageReal = useCallback(
     async (content: string) => {
@@ -105,6 +113,9 @@ export function useSSEStream(sessionId: string): UseSSEStreamReturn {
         );
 
         if (!response.ok) {
+          if (response.status === 429) {
+            options?.onRateLimit?.();
+          }
           throw new Error(`SSE 요청 실패: ${response.status}`);
         }
 
@@ -138,6 +149,9 @@ export function useSSEStream(sessionId: string): UseSSEStreamReturn {
                 : `raw=${jsonStr.slice(0, 120)}`
             );
             setEvents((prev) => [...prev, event]);
+            if (event.type === "done") {
+              options?.onDone?.(event.remaining);
+            }
           } catch (e) {
             // silent fail 을 막기 위해 항상 경고 — 마지막 이벤트가 부분 JSON 으로 도착하는
             // 케이스를 진단하려면 이 로그가 핵심이다.
@@ -191,7 +205,7 @@ export function useSSEStream(sessionId: string): UseSSEStreamReturn {
         setIsStreaming(false);
       }
     },
-    [sessionId]
+    [sessionId, options]
   );
 
   const sendMessage = USE_MOCK ? sendMessageMock : sendMessageReal;
