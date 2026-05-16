@@ -39,19 +39,19 @@ export function UserTable({
   onResetUsage,
   loading,
 }: UserTableProps) {
-  const allSelected = users.length > 0 && users.every((u) => selectedIds.has(u.userId));
-  const someSelected = users.some((u) => selectedIds.has(u.userId)) && !allSelected;
+  const allSelected = users.length > 0 && users.every((u) => selectedIds.has(u.id));
+  const someSelected = users.some((u) => selectedIds.has(u.id)) && !allSelected;
 
   function handleSelectAll() {
     if (allSelected) {
       // Deselect all on current page
       const next = new Set(selectedIds);
-      users.forEach((u) => next.delete(u.userId));
+      users.forEach((u) => next.delete(u.id));
       onSelectionChange(next);
     } else {
       // Select all on current page
       const next = new Set(selectedIds);
-      users.forEach((u) => next.add(u.userId));
+      users.forEach((u) => next.add(u.id));
       onSelectionChange(next);
     }
   }
@@ -102,12 +102,12 @@ export function UserTable({
         </TableHeader>
         <TableBody>
           {users.map((user) => (
-            <TableRow key={user.userId}>
+            <TableRow key={user.id}>
               <TableCell>
                 <input
                   type="checkbox"
-                  checked={selectedIds.has(user.userId)}
-                  onChange={() => handleSelectOne(user.userId)}
+                  checked={selectedIds.has(user.id)}
+                  onChange={() => handleSelectOne(user.id)}
                   className="size-4 cursor-pointer rounded border-border accent-primary"
                   aria-label={`${user.name} 선택`}
                 />
@@ -130,12 +130,12 @@ export function UserTable({
               <TableCell className="text-right tabular-nums">
                 <span
                   className={
-                    user.usedToday >= user.dailyChatLimit
+                    user.todayUsed >= user.dailyChatLimit
                       ? "font-semibold text-destructive"
                       : ""
                   }
                 >
-                  {user.usedToday}/{user.dailyChatLimit}
+                  {user.todayUsed}/{user.dailyChatLimit}
                 </span>
               </TableCell>
               <TableCell className="text-right">

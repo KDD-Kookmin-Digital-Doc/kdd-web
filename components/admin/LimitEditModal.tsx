@@ -45,8 +45,8 @@ export function LimitEditModal({ open, onOpenChange, user, onSuccess }: LimitEdi
     setSubmitting(true);
     setError(null);
     try {
-      const res = await updateUserChatLimit(user.userId, { dailyChatLimit: numValue });
-      onSuccess(user.userId, res.dailyChatLimit);
+      const res = await updateUserChatLimit(user.id, { dailyChatLimit: numValue });
+      onSuccess(user.id, res.dailyChatLimit);
       onOpenChange(false);
     } catch {
       setError("한도 변경에 실패했습니다. 다시 시도해주세요.");

@@ -325,7 +325,16 @@ export async function updateUserChatLimit(
 ): Promise<UpdateUserChatLimitResponse> {
   if (USE_MOCK) {
     await delay(300);
-    return { userId, dailyChatLimit: req.dailyChatLimit };
+    const user = MOCK_ADMIN_USERS.find((u) => u.id === userId);
+    return {
+      id: userId,
+      email: user?.email ?? '',
+      name: user?.name ?? '',
+      role: user?.role ?? 'user',
+      userType: user?.userType ?? 'student',
+      dailyChatLimit: req.dailyChatLimit,
+      todayUsed: user?.todayUsed ?? 0,
+    };
   }
   return apiClient.patch<UpdateUserChatLimitResponse>(
     `/admin/users/${userId}/chat-limit`,
@@ -351,7 +360,7 @@ export async function resetUserUsage(
 ): Promise<ResetUserUsageResponse> {
   if (USE_MOCK) {
     await delay(300);
-    return { userId, usedToday: 0 };
+    return { dailyChatLimit: 30, todayUsed: 0, remaining: 30, resetsAt: '2026-04-17T00:00:00Z' };
   }
   return apiClient.post<ResetUserUsageResponse>(
     `/admin/users/${userId}/chat-usage/reset`,
@@ -361,7 +370,7 @@ export async function resetUserUsage(
 export async function getDefaultChatLimit(): Promise<DefaultChatLimitResponse> {
   if (USE_MOCK) {
     await delay(200);
-    return { defaultDailyChatLimit: MOCK_DEFAULT_CHAT_LIMIT };
+    return { defaultChatLimit: MOCK_DEFAULT_CHAT_LIMIT };
   }
   return apiClient.get<DefaultChatLimitResponse>(
     "/admin/settings/default-chat-limit",
@@ -373,7 +382,7 @@ export async function updateDefaultChatLimit(
 ): Promise<UpdateDefaultChatLimitResponse> {
   if (USE_MOCK) {
     await delay(300);
-    return { defaultDailyChatLimit: req.defaultDailyChatLimit };
+    return { defaultChatLimit: req.defaultChatLimit };
   }
   return apiClient.patch<UpdateDefaultChatLimitResponse>(
     "/admin/settings/default-chat-limit",
