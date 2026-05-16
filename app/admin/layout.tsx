@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MessageSquare, FileText, CheckSquare } from "lucide-react";
+import { MessageSquare, FileText, CheckSquare, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { SidebarContext } from "@/components/sidebar/SidebarContext";
@@ -16,6 +16,7 @@ const ADMIN_TABS: readonly { href: string; label: string; icon: LucideIcon }[] =
     { href: "/admin", label: "통계", icon: MessageSquare },
     { href: "/admin/documents", label: "문서 관리", icon: FileText },
     { href: "/admin/faq", label: "FAQ 관리", icon: CheckSquare },
+    { href: "/admin/users", label: "사용자 관리", icon: Users },
   ];
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
