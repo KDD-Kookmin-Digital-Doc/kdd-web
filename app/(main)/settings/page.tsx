@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useChatUsage } from "@/hooks/useChatUsage";
 import { updateMyInfo } from "@/lib/api/services/user.service";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,18 @@ function FieldRow({ label, htmlFor, error, children }: FieldRowProps) {
 
 export default function SettingsPage() {
   const { user, refreshUser, isLoading } = useAuth();
+  const {
+    remaining,
+    dailyLimit,
+    usedToday,
+    isLoading: usageLoading,
+    error: usageError,
+    refresh: usageRefresh,
+  } = useChatUsage();
+
+  const handleUsageRetry = () => {
+    usageRefresh();
+  };
 
   const [isSaving, setIsSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
@@ -214,6 +227,53 @@ export default function SettingsPage() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+          {/* 채팅 사용량 섹션 */}
+          <section className="rounded-lg border border-border bg-white p-6">
+            <h3 className="mb-4 text-base font-semibold text-foreground">채팅 사용량</h3>
+
+            {usageLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                <span>사용량 정보를 불러오는 중...</span>
+              </div>
+            )}
+
+            {usageError && !usageLoading && (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-destructive">사용량 정보를 불러올 수 없습니다.</p>
+                <button
+                  onClick={handleUsageRetry}
+                  className="w-fit rounded-lg bg-primary px-3 py-1.5 text-xs text-white hover:bg-primary/90"
+                >
+                  재시도
+                </button>
+              </div>
+            )}
+
+            {!usageLoading && !usageError && dailyLimit != null && (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">일일 한도</p>
+                  <p className="text-lg font-medium text-foreground">{dailyLimit}회</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">오늘 사용</p>
+                  <p className="text-lg font-medium text-foreground">{usedToday}회</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">남은 횟수</p>
+                  <p className={cn("text-lg font-medium", remaining === 0 ? "text-destructive" : "text-foreground")}>
+                    {remaining}회
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">초기화 시간</p>
+                  <p className="text-lg font-medium text-foreground">매일 00:00 (KST)</p>
+                </div>
+              </div>
+            )}
+          </section>
+
           {/* 내 정보 섹션 */}
           <section className="rounded-xl border border-border p-5 space-y-4">
             <h2 className="text-sm font-semibold text-foreground">내 정보</h2>
