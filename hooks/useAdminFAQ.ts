@@ -60,31 +60,37 @@ export function useAdminFAQ() {
     }
   }, [loadFAQs]);
 
-  const handleApproveCandidate = useCallback(async (id: string) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.candidateId === id ? { ...c, status: "approved" as const } : c
-      )
-    );
-    try {
-      await approveCandidate(id);
-    } catch {
-      loadCandidates();
-    }
-  }, [loadCandidates]);
+  const handleApproveCandidate = useCallback(
+    async (id: string, topic: string) => {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.candidateId === id ? { ...c, status: "approved" as const } : c,
+        ),
+      );
+      try {
+        await approveCandidate(id, topic);
+      } catch {
+        loadCandidates();
+      }
+    },
+    [loadCandidates],
+  );
 
-  const handleRejectCandidate = useCallback(async (id: string) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.candidateId === id ? { ...c, status: "rejected" as const } : c
-      )
-    );
-    try {
-      await rejectCandidate(id);
-    } catch {
-      loadCandidates();
-    }
-  }, [loadCandidates]);
+  const handleRejectCandidate = useCallback(
+    async (id: string) => {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.candidateId === id ? { ...c, status: "rejected" as const } : c,
+        ),
+      );
+      try {
+        await rejectCandidate(id);
+      } catch {
+        loadCandidates();
+      }
+    },
+    [loadCandidates],
+  );
 
   return {
     activeTab,

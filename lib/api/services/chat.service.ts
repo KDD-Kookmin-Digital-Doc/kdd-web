@@ -96,8 +96,7 @@ export async function updateSessionTitle(
   return apiClient.patch<ChatSessionUpdateResponse>(`/chat/sessions/${sessionId}`, { title });
 }
 
-// 추천 질문 — 백엔드(/chat/recommended-questions) 미구현 상태이므로 항상 mock 반환.
-// 백엔드 구현이 추가되면 USE_MOCK 분기를 제거하고 apiClient.get으로 대체한다.
+// 추천 질문 — 백엔드 GET /chat/recommended-questions 연결
 const RECOMMENDED_QUESTIONS_MOCK: RecommendedQuestionsResponse = {
   questions: [
     { questionId: 'rq-001', content: '이번 학기 수강신청 기간이 언제인가요?' },
@@ -109,6 +108,9 @@ const RECOMMENDED_QUESTIONS_MOCK: RecommendedQuestionsResponse = {
 };
 
 export async function getRecommendedQuestions(): Promise<RecommendedQuestionsResponse> {
-  await delay(300);
-  return RECOMMENDED_QUESTIONS_MOCK;
+  if (USE_MOCK) {
+    await delay(300);
+    return RECOMMENDED_QUESTIONS_MOCK;
+  }
+  return apiClient.get<RecommendedQuestionsResponse>('/chat/recommended-questions');
 }

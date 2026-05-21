@@ -74,14 +74,14 @@ function SectionTitle({
 
 interface RegisterModalProps {
   count: number;
-  onRegister: () => void;
+  onRegister: (topic: string) => void;
   onClose: () => void;
 }
 
 function RegisterModal({ count, onRegister, onClose }: RegisterModalProps) {
   const topics = MOCK_FAQ_TOPICS.filter((t) => t.topic !== "all");
   const [registerCategory, setRegisterCategory] = useState(
-    topics[0]?.topic ?? ""
+    topics[0]?.topic ?? "",
   );
 
   return (
@@ -131,7 +131,7 @@ function RegisterModal({ count, onRegister, onClose }: RegisterModalProps) {
           </button>
           <button
             type="button"
-            onClick={onRegister}
+            onClick={() => onRegister(registerCategory)}
             className="flex-1 rounded-xl bg-primary py-2.5 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
             등록하기
@@ -159,7 +159,14 @@ export function FAQTab() {
   }
 
   const visibleCandidates = candidates.filter((c) => {
-    if (filterStatus !== "all" && c.status !== filterStatus) return false;
+    if (filterStatus !== "all") {
+      // "registered" 필터는 낙관적 업데이트 상태 "approved"도 포함
+      const matched =
+        filterStatus === "registered"
+          ? c.status === "registered" || c.status === "approved"
+          : c.status === filterStatus;
+      if (!matched) return false;
+    }
     if (filterTopic !== "all" && c.topic !== filterTopic) return false;
     return true;
   });
@@ -185,9 +192,7 @@ export function FAQTab() {
     const pendingVisibleIds = visibleCandidates
       .filter((c) => c.status === "pending")
       .map((c) => c.candidateId);
-    const allSelected = pendingVisibleIds.every((id) =>
-      selectedIds.has(id)
-    );
+    const allSelected = pendingVisibleIds.every((id) => selectedIds.has(id));
     if (allSelected) {
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -209,15 +214,30 @@ export function FAQTab() {
     setSelectedIds(new Set());
   }, [selectedIds, rejectCandidate]);
 
-  const handleBulkApprove = useCallback(() => {
-    pendingSelected.forEach((id) => approveCandidate(id));
-    showToast(`${pendingSelected.length}개 FAQ가 등록되었습니다.`);
-    setSelectedIds(new Set());
-    setShowRegisterModal(false);
-  }, [pendingSelected, approveCandidate]);
+  const handleBulkApprove = useCallback(
+    async (topic: string) => {
+      const results = await Promise.allSettled(
+        pendingSelected.map((id) => approveCandidate(id, topic)),
+      );
+      const succeeded = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+        showToast(`${succeeded}개 등록 완료, ${failed}개 실패`);
+      } else {
+        showToast(`${succeeded}개 FAQ가 등록되었습니다.`);
+      }
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        pendingSelected.forEach((id) => next.delete(id));
+        return next;
+      });
+      setShowRegisterModal(false);
+    },
+    [pendingSelected, approveCandidate],
+  );
 
   const pendingVisible = visibleCandidates.filter(
-    (c) => c.status === "pending"
+    (c) => c.status === "pending",
   );
   const allPendingSelected =
     pendingVisible.length > 0 &&
@@ -256,7 +276,10 @@ export function FAQTab() {
                 onChange={(e) => setFilterTopic(e.target.value)}
               >
                 {MOCK_FAQ_TOPICS.map((t) => (
-                  <option key={t.topic} value={t.topic === "all" ? "all" : t.topic}>
+                  <option
+                    key={t.topic}
+                    value={t.topic === "all" ? "all" : t.topic}
+                  >
                     {t.label}
                   </option>
                 ))}
@@ -345,28 +368,23 @@ export function FAQTab() {
                       "border-b border-border/40",
                     c.status === "rejected"
                       ? "bg-secondary/30 opacity-60"
-                      : "hover:bg-secondary/50"
+                      : "hover:bg-secondary/50",
                   )}
                 >
                   <div className="flex items-start gap-3 px-4 py-3">
                     {/* 체크박스 */}
                     <button
                       type="button"
-                      onClick={() =>
-                        canSelect && toggleSelect(c.candidateId)
-                      }
+                      onClick={() => canSelect && toggleSelect(c.candidateId)}
                       className={cn(
                         "mt-0.5 shrink-0 transition-colors",
                         canSelect
                           ? "cursor-pointer text-muted-foreground hover:text-primary"
-                          : "cursor-not-allowed text-muted-foreground/30"
+                          : "cursor-not-allowed text-muted-foreground/30",
                       )}
                     >
                       {isSelected ? (
-                        <CheckSquare
-                          size={16}
-                          className="text-primary"
-                        />
+                        <CheckSquare size={16} className="text-primary" />
                       ) : (
                         <Square size={16} />
                       )}
@@ -377,9 +395,7 @@ export function FAQTab() {
                       type="button"
                       className="min-w-0 flex-1 text-left"
                       onClick={() =>
-                        setExpandedId(
-                          isExpanded ? null : c.candidateId
-                        )
+                        setExpandedId(isExpanded ? null : c.candidateId)
                       }
                     >
                       <div className="flex items-center gap-2">
@@ -388,7 +404,7 @@ export function FAQTab() {
                             className={cn(
                               "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
                               getTopicStyle(c.topic).bg,
-                              getTopicStyle(c.topic).fg
+                              getTopicStyle(c.topic).fg,
                             )}
                           >
                             {getTopicStyle(c.topic).label}
@@ -401,22 +417,22 @@ export function FAQTab() {
                           size={14}
                           className={cn(
                             "shrink-0 text-muted-foreground transition-transform",
-                            isExpanded && "rotate-180"
+                            isExpanded && "rotate-180",
                           )}
                         />
                       </div>
-                      {!isExpanded && c.draftAnswer && (
+                      {!isExpanded && c.answerDraft && (
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          A. {c.draftAnswer}
+                          A. {c.answerDraft}
                         </p>
                       )}
-                      {isExpanded && c.draftAnswer && (
+                      {isExpanded && c.answerDraft && (
                         <div className="mt-2 rounded-xl bg-secondary p-3">
                           <p className="mb-1 text-xs font-semibold text-muted-foreground">
                             답변 초안
                           </p>
                           <p className="text-[13px] leading-relaxed text-foreground">
-                            {c.draftAnswer}
+                            {c.answerDraft}
                           </p>
                         </div>
                       )}
@@ -428,7 +444,7 @@ export function FAQTab() {
                         className={cn(
                           "rounded-full px-2 py-0.5 text-[11px] font-semibold",
                           statusCfg.bg,
-                          statusCfg.fg
+                          statusCfg.fg,
                         )}
                       >
                         {statusCfg.label}
@@ -452,12 +468,10 @@ export function FAQTab() {
         <p className="mt-3 text-right text-xs text-muted-foreground">
           전체 {candidates.length}개 · 검토 대기{" "}
           {candidates.filter((c) => c.status === "pending").length}개 · 반려{" "}
-          {candidates.filter((c) => c.status === "rejected").length}개 ·
-          등록됨{" "}
+          {candidates.filter((c) => c.status === "rejected").length}개 · 등록됨{" "}
           {
             candidates.filter(
-              (c) =>
-                c.status === "approved" || c.status === "registered"
+              (c) => c.status === "approved" || c.status === "registered",
             ).length
           }
           개

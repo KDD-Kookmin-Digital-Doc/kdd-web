@@ -14,8 +14,16 @@ export interface AdminStatistics {
   users: {
     totalUsers: number;
     byUserType: { student: number; staff: number };
-    byDepartment: Record<string, number>;
-    byGrade: Record<string, number>;
+    /** 백엔드 키: "software" | "ai" (StudentDepartment enum 값) */
+    byDepartment: { software: number; ai: number };
+    /** 백엔드 키: "1" | "2" | "3" | "4" | "5_or_above" */
+    byGrade: {
+      "1": number;
+      "2": number;
+      "3": number;
+      "4": number;
+      "5_or_above": number;
+    };
   };
   overview: {
     totalQuestions: number;
@@ -31,14 +39,16 @@ export interface AdminStatistics {
 }
 
 export interface FAQCandidate {
+  /** 백엔드 Long → string 변환 */
   candidateId: string;
   question: string;
-  draftAnswer?: string;
+  /** 백엔드 필드명: answerDraft */
+  answerDraft?: string;
   frequency: number;
   topic: string;
-  createdAt: string;
-  /** 프론트 전용 — API 응답에 없음, 승인/반려 상태를 로컬에서 관리 */
+  /** 백엔드 반환값: "pending" | "approved" | "rejected" */
   status?: "pending" | "approved" | "rejected" | "registered";
+  createdAt: string;
   /** 프론트 전용 — API 응답에 없음 */
   source?: string;
 }

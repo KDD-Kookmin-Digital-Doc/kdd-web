@@ -114,18 +114,6 @@ export function StatsTab() {
   return (
     <div className="px-4 py-6">
       <div className="mx-auto max-w-4xl space-y-6">
-        {/* 데모 데이터 안내 */}
-        <div className="rounded-xl border border-dashed border-border bg-secondary/40 px-4 py-3 text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">데모 데이터</span>
-          <span className="ml-2">
-            백엔드 통계 API(
-            <code className="mx-0.5 rounded bg-background px-1 py-0.5 font-mono text-[11px]">
-              /admin/statistics
-            </code>
-            )가 아직 구현되지 않아 임시 값으로 표시됩니다.
-          </span>
-        </div>
-
         {/* ── 전체 서비스 사용 통계 ── */}
         <section>
           <SectionTitle

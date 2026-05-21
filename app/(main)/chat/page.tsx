@@ -6,6 +6,7 @@ import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatWelcome } from "@/components/chat/ChatWelcome";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { useChatContext } from "@/components/chat/ChatContext";
+import { useChatUsage } from "@/hooks/useChatUsage";
 import { getRecommendedQuestions } from "@/lib/api/services/chat.service";
 import type { RecommendedQuestion } from "@/types/api/chat";
 
@@ -13,8 +14,12 @@ export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { createNewSession } = useChatContext();
-  const [recommendations, setRecommendations] = useState<RecommendedQuestion[]>([]);
-  const [isRecommendationsLoading, setIsRecommendationsLoading] = useState(true);
+  const { remaining } = useChatUsage();
+  const [recommendations, setRecommendations] = useState<RecommendedQuestion[]>(
+    [],
+  );
+  const [isRecommendationsLoading, setIsRecommendationsLoading] =
+    useState(true);
 
   // FAQ "채팅에서 이어가기" 등에서 넘어온 초기 질문
   const initialQuery = searchParams.get("q") ?? undefined;
@@ -33,17 +38,21 @@ export default function ChatPage() {
   const handleSend = async (message: string) => {
     try {
       const sessionId = await createNewSession();
-      router.push(`/chat/${sessionId}?q=${encodeURIComponent(message)}&autosend=1`);
+      router.push(
+        `/chat/${sessionId}?q=${encodeURIComponent(message)}&autosend=1`,
+      );
     } catch {
       // 세션 생성 실패 시 임시 id로 이동
       const tempId = `new-${Date.now()}`;
-      router.push(`/chat/${tempId}?q=${encodeURIComponent(message)}&autosend=1`);
+      router.push(
+        `/chat/${tempId}?q=${encodeURIComponent(message)}&autosend=1`,
+      );
     }
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ChatHeader />
+      <ChatHeader remaining={remaining} />
       <div className="relative min-h-0 flex-1">
         <div className="mx-auto flex h-full max-w-3xl flex-col overflow-y-auto px-4 pt-6 pb-24">
           <ChatWelcome

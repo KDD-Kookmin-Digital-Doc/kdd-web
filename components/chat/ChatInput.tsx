@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent, type MouseEvent } from "react";
-import { ArrowUp, Paperclip } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
@@ -14,7 +14,13 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-export function ChatInput({ onSend, disabled, className, initialValue, placeholder }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  disabled,
+  className,
+  initialValue,
+  placeholder,
+}: ChatInputProps) {
   const [value, setValue] = useState(initialValue ?? "");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isSendingRef = useRef(false);
@@ -60,16 +66,11 @@ export function ChatInput({ onSend, disabled, className, initialValue, placehold
   return (
     <div
       onClick={handleContainerClick}
-      className={cn("flex cursor-text items-center gap-4 rounded-[28px] border border-border bg-white px-5 py-3 shadow-[0px_2px_12px_0px_rgba(0,0,0,0.08)]", className)}
+      className={cn(
+        "flex cursor-text items-center gap-4 rounded-[28px] border border-border bg-background px-5 py-3 shadow-md",
+        className,
+      )}
     >
-      <button
-        type="button"
-        disabled
-        className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/50"
-        aria-label="파일 첨부 (준비 중)"
-      >
-        <Paperclip className="size-5" />
-      </button>
       <textarea
         ref={textareaRef}
         value={value}
@@ -80,7 +81,7 @@ export function ChatInput({ onSend, disabled, className, initialValue, placehold
         rows={1}
         className={cn(
           "max-h-40 flex-1 resize-none overflow-y-auto scrollbar-none bg-transparent text-base leading-6 text-foreground outline-none field-sizing-content placeholder:text-muted-foreground",
-          disabled && "cursor-not-allowed opacity-50"
+          disabled && "cursor-not-allowed opacity-50",
         )}
       />
       <button
@@ -89,8 +90,8 @@ export function ChatInput({ onSend, disabled, className, initialValue, placehold
         className={cn(
           "flex size-9 shrink-0 items-center justify-center rounded-full transition-colors",
           canSend
-            ? "bg-primary text-white hover:bg-primary/85"
-            : "bg-primary/30 text-white"
+            ? "bg-primary text-primary-foreground hover:bg-primary/85"
+            : "bg-primary/30 text-primary-foreground",
         )}
       >
         <ArrowUp className="size-5" />

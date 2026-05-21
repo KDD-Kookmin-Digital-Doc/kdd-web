@@ -112,37 +112,108 @@ export async function updateDocumentCategory(
   );
 }
 
-// ── 백엔드 미구현 엔드포인트 (항상 mock 반환) ─────────────────────
-// 아래 함수들은 백엔드(/admin/statistics, /admin/faq-candidates/*)에 컨트롤러가 없어
-// USE_MOCK 값과 무관하게 mock 데이터를 반환한다.
-// 백엔드 구현 후 USE_MOCK 분기를 복원하고 apiClient 호출을 활성화한다.
+// ── 백엔드 구현 완료 엔드포인트 ─────────────────────
+// getStatistics, getFAQCandidates, approveCandidate, rejectCandidate
 
 export async function getStatistics(): Promise<AdminStatisticsResponse> {
-  await delay(400);
-  return MOCK_ADMIN_STATISTICS;
+  if (USE_MOCK) {
+    await delay(400);
+    return MOCK_ADMIN_STATISTICS;
+  }
+  return apiClient.get<AdminStatisticsResponse>('/admin/statistics');
+}
+
+/** 백엔드 FAQ 후보 응답 DTO — answerDraft 필드명 주의 */
+interface BackendFaqCandidateItem {
+  candidateId: number;
+  question: string;
+  answerDraft?: string;
+  topic?: string;
+  status: string;
+  frequency: number;
+  createdAt: string;
+}
+
+interface BackendFaqCandidatePageResponse {
+  data: BackendFaqCandidateItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+function toFaqCandidate(r: BackendFaqCandidateItem): FAQCandidate {
+  return {
+    candidateId: String(r.candidateId),
+    question: r.question,
+    answerDraft: r.answerDraft,
+    topic: r.topic ?? 'other',
+    status: (r.status?.toLowerCase() as FAQCandidate['status']) ?? 'pending',
+    frequency: r.frequency,
+    createdAt: r.createdAt,
+  };
 }
 
 export async function getFAQCandidates(
   params?: FAQCandidateListRequest,
 ): Promise<FAQCandidateListResponse> {
-  await delay(400);
+  if (USE_MOCK) {
+    await delay(400);
+    return {
+      data: MOCK_FAQ_CANDIDATES,
+      totalCount: MOCK_FAQ_CANDIDATES.length,
+      page: params?.page ?? 0,
+      pageSize: params?.pageSize ?? 10,
+      totalPages: Math.ceil(
+        MOCK_FAQ_CANDIDATES.length / (params?.pageSize ?? 10),
+      ),
+    };
+  }
+  const res = await apiClient.get<BackendFaqCandidatePageResponse>(
+    '/admin/faqs/candidates',
+    {
+      params: {
+        page: params?.page ?? 0,
+        pageSize: params?.pageSize ?? 20,
+      },
+    },
+  );
   return {
-    data: MOCK_FAQ_CANDIDATES,
-    totalCount: MOCK_FAQ_CANDIDATES.length,
-    page: params?.page ?? 1,
-    pageSize: params?.pageSize ?? 10,
-    totalPages: Math.ceil(
-      MOCK_FAQ_CANDIDATES.length / (params?.pageSize ?? 10),
-    ),
+    data: res.data.map(toFaqCandidate),
+    totalCount: res.totalCount,
+    page: res.page,
+    pageSize: res.pageSize,
+    totalPages: res.totalPages,
   };
 }
 
-export async function approveCandidate(_candidateId: string): Promise<void> {
-  await delay(300);
+/**
+ * FAQ 후보 승인.
+ * 백엔드: POST /admin/faqs/candidates/{id}/approve { topic }
+ * topic은 관리자가 지정한 카테고리 (예: "academic", "graduation" 등)
+ */
+export async function approveCandidate(
+  candidateId: string,
+  topic: string,
+): Promise<void> {
+  if (USE_MOCK) {
+    await delay(300);
+    return;
+  }
+  await apiClient.post<{ faqId: number; question: string; answer: string; topic: string; createdAt: string }>(
+    `/admin/faqs/candidates/${candidateId}/approve`,
+    { topic },
+  );
 }
 
-export async function rejectCandidate(_candidateId: string): Promise<void> {
-  await delay(300);
+export async function rejectCandidate(candidateId: string): Promise<void> {
+  if (USE_MOCK) {
+    await delay(300);
+    return;
+  }
+  await apiClient.patch<{ message: string }>(
+    `/admin/faqs/candidates/${candidateId}/reject`,
+  );
 }
 
 // ── 어드민 FAQ 관리 (실제 API 연결) ────────────────────────────────
