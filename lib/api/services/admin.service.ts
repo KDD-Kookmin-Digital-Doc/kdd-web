@@ -4,6 +4,7 @@ import type {
   AdminDocumentListRequest,
   AdminDocumentListPageResponse,
   AdminStatisticsResponse,
+  FAQCandidate,
   FAQCandidateListRequest,
   FAQCandidateListResponse,
   DocumentResponse,
@@ -17,7 +18,7 @@ import type {
   DefaultChatLimitResponse,
   UpdateDefaultChatLimitRequest,
   UpdateDefaultChatLimitResponse,
-} from '@/types/api/admin';
+} from "@/types/api/admin";
 import type { FAQListRequest, FAQListResponse, FAQItem } from "@/types/api/faq";
 import {
   MOCK_ADMIN_DOCUMENTS,
