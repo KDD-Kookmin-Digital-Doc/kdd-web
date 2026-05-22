@@ -115,6 +115,18 @@ export function useSSEStream(sessionId: string, options?: UseSSEStreamOptions): 
         if (!response.ok) {
           if (response.status === 429) {
             options?.onRateLimit?.();
+            // 429: 일일 채팅 횟수 초과. 사용자에게 명확한 안내가 필요하므로
+            // SSE error 이벤트를 합성해 [id] 페이지의 FallbackMessage가 노출되도록 한다.
+            setEvents((prev) => [
+              ...prev,
+              {
+                type: "error",
+                message:
+                  "오늘의 채팅 횟수를 모두 사용했습니다. 내일 00:00(KST)에 초기화됩니다.",
+              },
+            ]);
+            setIsStreaming(false);
+            return;
           }
           throw new Error(`SSE 요청 실패: ${response.status}`);
         }
@@ -208,6 +220,21 @@ export function useSSEStream(sessionId: string, options?: UseSSEStreamOptions): 
         const message =
           err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.";
         setError(message);
+        // 네트워크 오류나 기타 예외도 UI에 노출시켜 silent fail을 방지한다.
+        // 429는 위에서 별도 처리했으므로 여기 도달하지 않는다.
+        setEvents((prev) => {
+          // 이미 error/fallback 이벤트가 있다면 중복 추가하지 않는다.
+          if (prev.some((e) => e.type === "error" || e.type === "fallback")) {
+            return prev;
+          }
+          return [
+            ...prev,
+            {
+              type: "error",
+              message: "응답을 받지 못했습니다. 잠시 후 다시 시도해주세요.",
+            },
+          ];
+        });
       } finally {
         setIsStreaming(false);
       }
