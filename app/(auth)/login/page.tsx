@@ -109,12 +109,25 @@ function LoginPageContent() {
         setIsLoggingIn(true);
         const response = await googleLogin(code);
         authManager.setToken(response.accessToken);
-        const me = await getMyInfo();
-        setAuthCookies(me.role, me.profileCompleted);
+
+        // 로그인 페이지에서는 401 자동 리다이렉트를 방지한다.
+        // 방금 발급받은 토큰으로 요청하므로 refresh/redirect가 불필요하며,
+        // 자동 리다이렉트가 발동되면 state가 날아가 화면이 멈춘 것처럼 보인다.
+        let me;
+        try {
+          me = await getMyInfo({ skipAutoRefresh: true });
+        } catch {
+          // getMyInfo 실패해도 googleLogin 응답만으로 다음 단계 진행 가능
+          me = null;
+        }
+
+        if (me) {
+          setAuthCookies(me.role, me.profileCompleted);
+        }
 
         if (!response.isProfileCompleted) {
-          updateBasicInfo("name", me.name ?? "");
-          updateBasicInfo("email", me.email ?? "");
+          updateBasicInfo("name", me?.name ?? "");
+          updateBasicInfo("email", me?.email ?? "");
           setPhase("profile");
         } else {
           router.replace("/chat");

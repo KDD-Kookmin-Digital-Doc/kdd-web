@@ -19,6 +19,8 @@ export interface ApiRequestOptions {
   params?: Record<string, string | number | undefined>;
   signal?: AbortSignal;
   skipAuth?: boolean;
+  /** true이면 401 시 자동 refresh/redirect를 건너뛰고 즉시 에러를 throw한다. */
+  skipAutoRefresh?: boolean;
 }
 
 // ── ApiClient Class ─────────────────────────────────────────
@@ -133,7 +135,7 @@ export class ApiClient {
       });
 
       // 401 → token refresh & retry (once)
-      if (response.status === 401 && !isRetry) {
+      if (response.status === 401 && !isRetry && !options?.skipAutoRefresh) {
         try {
           const { authManager } = await import('./auth');
           await authManager.refreshAccessToken();
@@ -146,7 +148,7 @@ export class ApiClient {
           } catch {
             // ignore
           }
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
             window.location.href = '/login';
           }
           // Still throw the original 401 error
@@ -213,7 +215,7 @@ export class ApiClient {
           } catch {
             // ignore
           }
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
             window.location.href = '/login';
           }
           const errorBody = await response.json().catch(() => ({
@@ -280,7 +282,7 @@ export class ApiClient {
           } catch {
             // ignore
           }
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
             window.location.href = '/login';
           }
           const errorBody = await response.json().catch(() => ({

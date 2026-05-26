@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api/client';
+import type { ApiRequestOptions } from '@/lib/api/client';
 import { delay } from '@/lib/api/mock';
 import type { UserResponse, CreateProfileRequest, UpdateUserRequest } from '@/types/api/user';
 
@@ -21,12 +22,12 @@ const MOCK_USER: UserResponse = {
   jobDescription: null,
 };
 
-export async function getMyInfo(): Promise<UserResponse> {
+export async function getMyInfo(options?: ApiRequestOptions): Promise<UserResponse> {
   if (USE_MOCK) {
     await delay(300);
     return MOCK_USER;
   }
-  return apiClient.get<UserResponse>('/users/me');
+  return apiClient.get<UserResponse>('/users/me', options);
 }
 
 export async function createProfile(data: CreateProfileRequest): Promise<UserResponse> {
