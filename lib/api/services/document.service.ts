@@ -84,17 +84,32 @@ export async function getDocuments(params?: DocumentListRequest): Promise<Docume
   });
 }
 
+// 문서 상세 mock — id별로 그럴듯한 제목/카테고리를 반환한다.
+// fileUrl은 데모용 정적 PDF(public/mock/)를 가리켜 mock 모드에서도 뷰어가 동작한다.
+const MOCK_PDF_URL = '/mock/sample-regulation.pdf';
+
+const MOCK_DOCUMENT_DETAILS: Record<number, { title: string; category: string }> = {
+  1: { title: '2026학년도 학사일정', category: '학사공지' },
+  2: { title: '수강신청 안내', category: '수강신청' },
+  3: { title: '장학금 신청 안내', category: '교내장학' },
+  13: { title: '소프트웨어융합대학 졸업요건 안내', category: '졸업' },
+};
+
 export async function getDocumentDetail(documentId: number): Promise<DocumentDetailPublicResponse> {
   if (USE_MOCK) {
     await delay(300);
+    const meta = MOCK_DOCUMENT_DETAILS[documentId] ?? {
+      title: '국민대학교 학사 안내 문서',
+      category: '학사규정',
+    };
     return {
       documentId,
-      title: '문서 상세',
-      category: '학사규정',
-      fileUrl: `/mock/documents/${documentId}.pdf`,
-      viewCount: 0,
-      createdAt: '2026-01-01T00:00:00',
-      updatedAt: '2026-01-01T00:00:00',
+      title: meta.title,
+      category: meta.category,
+      fileUrl: MOCK_PDF_URL,
+      viewCount: 1242,
+      createdAt: '2026-02-01T00:00:00',
+      updatedAt: '2026-03-01T00:00:00',
     };
   }
   return apiClient.get<DocumentDetailPublicResponse>(`/documents/${documentId}`);

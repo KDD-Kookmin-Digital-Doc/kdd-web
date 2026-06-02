@@ -36,6 +36,18 @@ function mapTree(nodes: CategoryTreeResponse[]): CategoryNodeItem[] {
   }));
 }
 
+/**
+ * 자료실(문서) 화면의 데이터와 상호작용 상태를 한곳에서 관리하는 훅.
+ *
+ * 세 가지 탭을 지원하며 각각 활성화될 때만 데이터를 지연 로드한다.
+ * - `popular`: 인기 문서 목록
+ * - `list`: 카테고리/검색어/정렬/페이지로 필터링되는 전체 목록
+ * - `tree`: 카테고리 트리. 노드를 펼치면 해당 카테고리 문서를 한 번만 로드해 캐싱한다.
+ *
+ * 필터(검색어·카테고리·정렬)가 바뀌면 페이지를 1로 초기화한다.
+ *
+ * @returns 탭/필터/페이지 상태와 setter, 로드된 문서·카테고리 데이터, 로딩·에러 플래그
+ */
 export function useDocuments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<"latest" | "popular">("latest");

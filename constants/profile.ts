@@ -44,12 +44,11 @@ export const RETURN_PLAN_OPTIONS: SelectOption<ReturnPlan>[] = [
 ];
 
 export const STAFF_DEPARTMENT_OPTIONS: SelectOption<StaffDepartment>[] = [
-  { value: "academic_affairs", label: "교무처" },
-  { value: "student_affairs", label: "학생처" },
-  { value: "general_affairs", label: "총무처" },
-  { value: "planning", label: "기획처" },
-  { value: "sw_college", label: "소프트웨어융합대학" },
-  { value: "ai_college", label: "인공지능학부" },
-  { value: "library", label: "도서관" },
+  { value: "student_support", label: "학생지원팀" },
+  { value: "academic_affairs", label: "학사팀" },
+  { value: "admissions", label: "입학팀" },
+  { value: "industry_cooperation", label: "산학협력팀" },
+  { value: "international_office", label: "국제교류팀" },
+  { value: "general_affairs", label: "총무팀" },
   { value: "other", label: "기타" },
 ];

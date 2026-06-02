@@ -25,18 +25,18 @@ export const MOCK_CHAT_SESSIONS: Record<string, ChatSession> = {
         messageId: "2-2",
         role: "assistant",
         content:
-          "이번 학기(2026학년도 1학기) 휴학 신청 기간은 3월 3일부터 3월 14일까지입니다.\n\n일반 휴학의 경우 학기당 1회, 연속 2학기까지 신청 가능하며, 재학 중 통산 6학기(군휴학 제외)를 초과할 수 없습니다.\n\n휴학 신청은 학사정보시스템(KLAS)을 통해 온라인으로 신청하실 수 있으며, 질병휴학의 경우 의사 진단서를 제출해야 합니다.",
+          "이번 학기(2026학년도 1학기) 휴학 신청 기간은 3월 3일부터 3월 14일까지입니다.{{1}}\n\n일반 휴학의 경우 학기당 1회, 연속 2학기까지 신청 가능하며, 재학 중 통산 6학기(군휴학 제외)를 초과할 수 없습니다.{{1}}\n\n휴학 신청은 학사정보시스템(KLAS)을 통해 온라인으로 신청하실 수 있으며, 질병휴학의 경우 의사 진단서를 제출해야 합니다.{{2}}",
         confidence: "high",
         sources: [
           {
             documentId: 1,
             documentTitle: "학칙 제35조 (휴학)",
-            page: 12,
+            page: 8,
           },
           {
             documentId: 2,
             documentTitle: "2026학년도 학사일정 — 휴학 신청 기간",
-            page: 3,
+            page: 4,
           },
         ],
         createdAt: "2026-03-20T10:00:05",
@@ -51,13 +51,13 @@ export const MOCK_CHAT_SESSIONS: Record<string, ChatSession> = {
         messageId: "2-4",
         role: "assistant",
         content:
-          "군휴학은 일반 휴학과 신청 기간이 다릅니다.\n\n군휴학은 입영통지서를 받은 후 입영일 전까지 수시로 신청 가능합니다. 별도의 정해진 기간이 아니라, 입영통지서 수령 후 즉시 신청하시면 됩니다.",
+          "군휴학은 일반 휴학과 신청 기간이 다릅니다.{{1}}\n\n군휴학은 입영통지서를 받은 후 입영일 전까지 수시로 신청 가능합니다. 별도의 정해진 기간이 아니라, 입영통지서 수령 후 즉시 신청하시면 됩니다.{{1}}",
         confidence: "high",
         sources: [
           {
             documentId: 1,
             documentTitle: "학칙 제35조 (휴학)",
-            page: 12,
+            page: 8,
           },
         ],
         createdAt: "2026-03-20T10:01:05",
@@ -138,7 +138,7 @@ export const MOCK_CHAT_SESSIONS: Record<string, ChatSession> = {
         messageId: "6-2",
         role: "assistant",
         content:
-          '타 대학 계절학기 학점 인정은 가능하지만, 여러 조건이 있습니다.\n\n• 사전에 학과장 및 교학처장의 승인 필요\n• 해당 과목이 본교 교육과정과 동등하다고 인정되어야 함\n• 학점 인정 상한: 재학 중 최대 12학점\n\n"제29조(학점인정) ① 타 대학에서 이수한 학점은 교학처장 및 학과장의 승인을 받아 인정"',
+          '타 대학 계절학기 학점 인정은 가능하지만, 여러 조건이 있습니다.\n\n• 사전에 학과장 및 교학처장의 승인 필요\n• 해당 과목이 본교 교육과정과 동등하다고 인정되어야 함\n• 학점 인정 상한: 재학 중 최대 12학점{{1}}\n\n"제29조(학점인정) ① 타 대학에서 이수한 학점은 교학처장 및 학과장의 승인을 받아 인정"',
         confidence: "high",
         sources: [
           {
@@ -179,7 +179,7 @@ export const MOCK_CHAT_SESSIONS: Record<string, ChatSession> = {
         messageId: "7-2",
         role: "assistant",
         content:
-          '복수전공 신청 조건은 다음과 같습니다.\n\n• 2학년 이상 재학생\n• 직전 학기 평점평균 2.5 이상\n• 소속 학과(부)장의 승인\n• 복수전공 희망 학과(부)장의 승인\n\n"제24조(복수전공) ① 학생은 소속 학과 외에 타 학과의 전공을 복수전공으로 이수할 수 있다"',
+          '복수전공 신청 조건은 다음과 같습니다.\n\n• 2학년 이상 재학생\n• 직전 학기 평점평균 2.5 이상\n• 소속 학과(부)장의 승인\n• 복수전공 희망 학과(부)장의 승인{{1}}\n\n"제24조(복수전공) ① 학생은 소속 학과 외에 타 학과의 전공을 복수전공으로 이수할 수 있다"',
         confidence: "high",
         sources: [
           {
@@ -262,7 +262,7 @@ export const MOCK_SSE_SEQUENCE_HIGH: SSEEvent[] = [
     type: "text",
     content: "\n\n휴학 신청은 KLAS에서 온라인으로 하시면 됩니다.",
   } satisfies SSETextEvent,
-  { type: "done", messageId: 1001 } satisfies SSEDoneEvent,
+  { type: "done", messageId: 1001, remaining: 14 } satisfies SSEDoneEvent,
 ];
 
 export const MOCK_SSE_SEQUENCE_LOW: SSEEvent[] = [
@@ -284,7 +284,7 @@ export const MOCK_SSE_SEQUENCE_LOW: SSEEvent[] = [
     type: "text",
     content: "\n\n담당자 연락처는 학교 홈페이지에서 확인하실 수 있습니다.",
   } satisfies SSETextEvent,
-  { type: "done", messageId: 1002 } satisfies SSEDoneEvent,
+  { type: "done", messageId: 1002, remaining: 13 } satisfies SSEDoneEvent,
 ];
 
 export const MOCK_SSE_FALLBACK: SSEFallbackEvent = {

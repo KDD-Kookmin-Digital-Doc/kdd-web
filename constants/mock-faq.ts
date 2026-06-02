@@ -13,7 +13,7 @@ export const MOCK_FAQ_TOPICS: FAQTopic[] = [
   { topic: "curriculum", label: "전공·교과" },
   { topic: "career", label: "취업·현장실습" },
   { topic: "event", label: "행사·특강" },
-  { topic: "etc", label: "기타" },
+  { topic: "other", label: "기타" },
 ];
 
 export const MOCK_FAQ_ITEMS: FAQItem[] = [
@@ -193,7 +193,7 @@ export const MOCK_FAQ_ITEMS: FAQItem[] = [
     faqId: "21",
     question: "성적 증명서 발급은 어디서 하나요?",
     answer: "KLAS > 증명서 발급 메뉴 또는 학교 내 무인 증명서 발급기에서 발급 가능합니다. 영문 성적증명서도 동일하게 발급 가능하며, 졸업 후에도 발급할 수 있습니다.",
-    topic: "etc",
+    topic: "other",
     createdAt: "2026-03-27T16:50:00Z",
     helpful: 35, notHelpful: 1,
   },

@@ -103,6 +103,7 @@ export interface ChatMessageResponse {
   content: string;
   sources: ChatMessageSourceResponse[];
   confidence: string | null;
+  partial: boolean;
   createdAt: string;
 }
 

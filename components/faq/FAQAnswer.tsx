@@ -1,10 +1,19 @@
 "use client";
 
-import { Sparkles, ThumbsUp, ThumbsDown, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import {
+  Sparkles,
+  ThumbsUp,
+  ThumbsDown,
+  MessageCircle,
+  Loader2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SourceCard } from "@/components/chat/SourceCard";
+import { startFaqChat } from "@/lib/api/services/faq.service";
+import { useChatContext } from "@/components/chat/ChatContext";
 import type { Source } from "@/types/chat";
 
 interface FAQAnswerProps {
@@ -31,9 +40,25 @@ export function FAQAnswer({
   sources,
 }: FAQAnswerProps) {
   const router = useRouter();
+  const { addChat } = useChatContext();
+  const [isStartingChat, setIsStartingChat] = useState(false);
 
-  const handleContinueChat = () => {
-    router.push(`/chat?q=${encodeURIComponent(question)}`);
+  const handleContinueChat = async () => {
+    if (isStartingChat) return;
+    setIsStartingChat(true);
+
+    try {
+      const res = await startFaqChat(faqId);
+      // 사이드바에 새 세션 추가
+      addChat(res.sessionId, question);
+      // FAQ 초기 메시지를 쿼리 파라미터로 전달하여 채팅방에서 바로 렌더링
+      router.push(`/chat/${res.sessionId}?source=faq`);
+    } catch {
+      // 실패 시 기존 동작으로 폴백 (질문 prefill)
+      router.push(`/chat?q=${encodeURIComponent(question)}`);
+    } finally {
+      setIsStartingChat(false);
+    }
   };
 
   return (
@@ -71,7 +96,7 @@ export function FAQAnswer({
             "flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
             feedback === "up"
               ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground",
           )}
           aria-label="도움이 됨"
         >
@@ -85,7 +110,7 @@ export function FAQAnswer({
             "flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
             feedback === "down"
               ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground",
           )}
           aria-label="도움이 안 됨"
         >
@@ -97,10 +122,15 @@ export function FAQAnswer({
             variant="outline"
             size="sm"
             onClick={handleContinueChat}
+            disabled={isStartingChat}
             className="gap-1.5 text-xs"
           >
-            <MessageCircle className="size-3.5" />
-            채팅에서 이어가기
+            {isStartingChat ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <MessageCircle className="size-3.5" />
+            )}
+            {isStartingChat ? "채팅 시작 중..." : "채팅에서 이어가기"}
           </Button>
         </div>
       </div>

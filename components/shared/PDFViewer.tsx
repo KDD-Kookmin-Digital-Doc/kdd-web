@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, FileText, Loader2, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -19,6 +19,8 @@ const BACKEND_PROXY_PREFIX = "/api/backend";
 function resolveBackendUrl(fileUrl: string): string | null {
   if (!fileUrl) return null;
   if (/^(https?:|blob:|data:)/i.test(fileUrl)) return fileUrl;
+  // mock 데모용 정적 자산(public/mock/*)은 백엔드 프록시를 거치지 않고 직접 서빙한다.
+  if (fileUrl.startsWith("/mock/")) return fileUrl;
   if (fileUrl.startsWith("/")) return `${BACKEND_PROXY_PREFIX}${fileUrl}`;
   return null;
 }
@@ -45,14 +47,19 @@ export function PDFViewer({
   const [currentPage, setCurrentPage] = useState<number>(initialPage ?? 1);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // 모달이 새로 열릴 때 페이지/에러 상태 초기화
-  useEffect(() => {
+  // 모달이 새로 열리거나 다른 문서/페이지로 바뀌면 페이지·에러 상태를 초기화한다.
+  // 이펙트 대신 "값이 바뀌면 렌더 중 상태 보정"하는 React 권장 패턴을 사용한다.
+  // (https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const resetKey = `${open}|${fileUrl}|${initialPage ?? 1}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
     if (open) {
       setCurrentPage(initialPage ?? 1);
       setNumPages(0);
       setLoadError(null);
     }
-  }, [open, initialPage, fileUrl]);
+  }
 
   // file 객체는 매 렌더 새로 만들면 react-pdf가 매번 재요청한다 — useMemo로 안정화
   const fileSource = useMemo(() => {

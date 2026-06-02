@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api/client';
+import type { ApiRequestOptions } from '@/lib/api/client';
 import { delay } from '@/lib/api/mock';
 import type { UserResponse, CreateProfileRequest, UpdateUserRequest } from '@/types/api/user';
 
@@ -8,7 +9,8 @@ const MOCK_USER: UserResponse = {
   userId: 1,
   email: 'honggildong@kookmin.ac.kr',
   name: '홍길동',
-  role: 'user',
+  // mock 모드에서는 관리자 대시보드까지 전체 기능을 둘러볼 수 있도록 admin으로 설정
+  role: 'admin',
   profileCompleted: true,
   userType: 'student',
   studentId: '20201234',
@@ -21,12 +23,12 @@ const MOCK_USER: UserResponse = {
   jobDescription: null,
 };
 
-export async function getMyInfo(): Promise<UserResponse> {
+export async function getMyInfo(options?: ApiRequestOptions): Promise<UserResponse> {
   if (USE_MOCK) {
     await delay(300);
     return MOCK_USER;
   }
-  return apiClient.get<UserResponse>('/users/me');
+  return apiClient.get<UserResponse>('/users/me', options);
 }
 
 export async function createProfile(data: CreateProfileRequest): Promise<UserResponse> {

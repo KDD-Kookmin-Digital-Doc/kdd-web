@@ -159,39 +159,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), var(--font-noto-sans-kr), sans-serif;
-}
-
-@layer utilities {
-  .typo-heading-1 {
-    font-size: 30px;
-    line-height: 36px;
-    font-weight: 700;
-  }
-
-  .typo-heading-2 {
-    font-size: 24px;
-    line-height: 32px;
-    font-weight: 700;
-  }
-
-  .typo-heading-3 {
-    font-size: 18px;
-    line-height: 27px;
-    font-weight: 600;
-  }
-
-  .typo-paragraph {
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-  }
-
-  .typo-small-text {
-    font-size: 14px;
-    line-height: 20px;
-    font-weight: 500;
-  }
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* 기본 포커스/활성 검은 링 제거 — 키보드 포커스(:focus-visible)만 노출 */

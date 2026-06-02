@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatInput } from "@/components/chat/ChatInput";
@@ -11,10 +12,20 @@ import { FallbackMessage } from "@/components/chat/FallbackMessage";
 import { AnswerWithCitations } from "@/components/chat/AnswerWithCitations";
 import { useChatContext } from "@/components/chat/ChatContext";
 import { useSSEStream } from "@/hooks/useSSEStream";
+import { useChatUsage } from "@/hooks/useChatUsage";
+import { useToast } from "@/components/ui/toast";
 import { getSessionDetail } from "@/lib/api/services/chat.service";
 import { getDocumentDetail } from "@/lib/api/services/document.service";
+import { ApiError } from "@/lib/api/errors";
 import type { ChatMessage, Source } from "@/types/chat";
 import type { SSEEvent, ChatMessageResponse } from "@/types/api/chat";
+
+type PageState = "loading" | "loaded" | "notFound" | "serverError";
+
+const RATE_LIMIT_MESSAGE =
+  "오늘의 채팅 횟수를 모두 사용했습니다. 내일 00:00(KST)에 초기화됩니다.";
+const NETWORK_ERROR_MESSAGE =
+  "응답을 받지 못했습니다. 잠시 후 다시 시도해주세요.";
 
 // react-pdf는 DOMMatrix 같은 브라우저 전용 API를 모듈 평가 시점에 참조하므로
 // SSR을 비활성화한 동적 import로만 로드한다.
@@ -104,6 +115,7 @@ function mapApiMessageToLocal(msg: ChatMessageResponse): ChatMessage {
     confidence: (msg.confidence as ChatMessage["confidence"]) ?? undefined,
     sources: dedupedSources,
     rawSources,
+    partial: msg.partial || undefined,
     createdAt: msg.createdAt,
   };
 }
@@ -113,8 +125,11 @@ export default function ChatDetailPage({ params }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { renameChat } = useChatContext();
+  const { remaining, setRemaining } = useChatUsage();
+  const toast = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [pageState, setPageState] = useState<PageState>("loading");
   const initialQueryHandled = useRef(false);
 
   const [pdfViewer, setPdfViewer] = useState<PDFViewerState>({
@@ -124,36 +139,64 @@ export default function ChatDetailPage({ params }: Props) {
     initialPage: undefined,
   });
 
-  const { events, isStreaming, sendMessage, reset } = useSSEStream(id);
+  const { events, isStreaming, sendMessage, reset } = useSSEStream(id, {
+    onDone: (remaining) => {
+      if (remaining != null) {
+        setRemaining(remaining);
+      }
+    },
+    onRateLimit: () => {
+      setRemaining(0);
+      toast.error(RATE_LIMIT_MESSAGE);
+    },
+    onError: () => {
+      toast.error(NETWORK_ERROR_MESSAGE);
+    },
+  });
 
   // 세션 상세 로드 (히스토리 메시지)
   // 초기 1회만 서버 응답으로 채운다. fetch가 늦게 resolve돼서 유저가 이미 새 메시지를 추가한
   // 상태를 덮어쓰면 방금 나눈 대화가 통째로 사라진다 (StrictMode 중복 fetch에서 특히 잘 터짐).
-  useEffect(() => {
+  const loadSession = useCallback(async () => {
     const numericId = Number(id);
-    if (isNaN(numericId)) {
+    // Task 3.1: 양의 정수가 아니면 notFound 상태, API 호출 없음
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      setPageState("notFound");
       setSessionLoaded(true);
       return;
     }
-    let cancelled = false;
-    getSessionDetail(numericId)
-      .then((res) => {
-        if (cancelled) return;
-        if (res.messages.length === 0) return;
+
+    try {
+      const res = await getSessionDetail(numericId);
+      if (res.messages.length > 0) {
         setMessages((prev) =>
           prev.length === 0 ? res.messages.map(mapApiMessageToLocal) : prev,
         );
-      })
-      .catch(() => {
-        // 세션 로드 실패 시 빈 메시지로 시작
-      })
-      .finally(() => {
-        if (!cancelled) setSessionLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
+      }
+      setPageState("loaded");
+    } catch (error) {
+      // Task 3.2: 404 SESSION_NOT_FOUND 응답 처리
+      if (error instanceof ApiError && error.status === 404) {
+        setPageState("notFound");
+      } else {
+        // Task 3.3: 5xx/네트워크 오류 처리
+        setPageState("serverError");
+      }
+    } finally {
+      setSessionLoaded(true);
+    }
   }, [id]);
+
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
+
+  // Task 3.3: 재시도 핸들러
+  const handleRetry = useCallback(() => {
+    setPageState("loading");
+    setSessionLoaded(false);
+    loadSession();
+  }, [loadSession]);
 
   // SSE 이벤트로부터 fallback/error 이벤트 추출
   const fallbackEvent = events.find((e) => e.type === "fallback");
@@ -244,6 +287,15 @@ export default function ChatDetailPage({ params }: Props) {
     if (initialQueryHandled.current) return;
     const q = searchParams.get("q");
     const autosend = searchParams.get("autosend");
+    const source = searchParams.get("source");
+
+    // FAQ에서 넘어온 경우: 서버에서 이미 메시지가 로드되므로 autosend 불필요
+    if (source === "faq") {
+      initialQueryHandled.current = true;
+      router.replace(`/chat/${id}`);
+      return;
+    }
+
     if (q && messages.length === 0) {
       initialQueryHandled.current = true;
       handleSend(q);
@@ -279,66 +331,130 @@ export default function ChatDetailPage({ params }: Props) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ChatHeader />
-      <div className="relative min-h-0 flex-1">
-        <div className="h-full overflow-y-auto pb-24">
-          {isEmpty ? (
-            <div className="mx-auto flex h-full max-w-3xl flex-col px-4 pt-6">
-              <ChatWelcome onSuggestionClick={handleSend} />
-            </div>
-          ) : (
-            <div className="mx-auto max-w-3xl px-4 pt-6">
-              <ChatMessageList
-                messages={messages}
-                isStreaming={
-                  isStreaming && !streamingText && !fallbackEvent && !errorEvent
-                }
-                onSelectQuestion={handleSend}
-                onOpenPDF={handleOpenPDF}
-              />
+      <ChatHeader remaining={remaining} />
 
-              {isStreaming && streamingText && (
-                <div className="mt-6 flex justify-start">
-                  <div className="max-w-[85%] rounded-2xl bg-secondary px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-foreground md:max-w-[70%]">
-                    {streamingRawSources.length > 0 ? (
-                      <AnswerWithCitations
-                        content={streamingText}
-                        rawSources={streamingRawSources}
-                        onOpenPDF={handleOpenPDF}
-                        streaming
-                      />
-                    ) : (
-                      streamingText
-                    )}
+      {/* Task 3.4: notFound UI 렌더링 */}
+      {pageState === "notFound" && (
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
+          <p className="text-lg font-medium text-foreground">
+            존재하지 않는 채팅방입니다
+          </p>
+          <Link href="/chat" className="text-sm text-primary hover:underline">
+            채팅 목록으로 이동
+          </Link>
+        </div>
+      )}
+
+      {/* Task 3.5: serverError UI 렌더링 */}
+      {pageState === "serverError" && (
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
+          <p className="text-lg font-medium text-foreground">
+            오류가 발생했습니다
+          </p>
+          <p className="text-sm text-muted-foreground">다시 시도해주세요.</p>
+          <button
+            onClick={handleRetry}
+            className="rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary/90"
+          >
+            재시도
+          </button>
+        </div>
+      )}
+
+      {/* 정상 로드 또는 로딩 중일 때 기존 채팅 UI 표시 */}
+      {(pageState === "loading" || pageState === "loaded") && (
+        <div className="relative min-h-0 flex-1">
+          <div className="h-full overflow-y-auto pb-24">
+            {isEmpty ? (
+              <div className="mx-auto flex h-full max-w-3xl flex-col px-4 pt-6">
+                <ChatWelcome onSuggestionClick={handleSend} />
+              </div>
+            ) : (
+              <div className="mx-auto max-w-3xl px-4 pt-6">
+                <ChatMessageList
+                  messages={messages}
+                  isStreaming={
+                    isStreaming &&
+                    !streamingText &&
+                    !fallbackEvent &&
+                    !errorEvent
+                  }
+                  onSelectQuestion={handleSend}
+                  onOpenPDF={handleOpenPDF}
+                />
+
+                {isStreaming && streamingText && (
+                  <div className="mt-6 flex justify-start">
+                    <div className="max-w-[85%] rounded-2xl bg-secondary px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-foreground md:max-w-[70%]">
+                      {streamingRawSources.length > 0 ? (
+                        <AnswerWithCitations
+                          content={streamingText}
+                          rawSources={streamingRawSources}
+                          onOpenPDF={handleOpenPDF}
+                          streaming
+                        />
+                      ) : (
+                        streamingText
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {!isStreaming && fallbackEvent && (
-                <div className="mt-6">
-                  <FallbackMessage
-                    type="fallback"
-                    message={fallbackEvent.message}
-                    suggestedQuestions={fallbackEvent.suggestedQuestions}
-                    onSelectQuestion={handleSend}
-                  />
-                </div>
-              )}
+                {!isStreaming && fallbackEvent && (
+                  <div className="mt-6">
+                    <FallbackMessage
+                      type="fallback"
+                      message={fallbackEvent.message}
+                      suggestedQuestions={fallbackEvent.suggestedQuestions}
+                      onSelectQuestion={handleSend}
+                    />
+                  </div>
+                )}
 
-              {!isStreaming && errorEvent && (
-                <div className="mt-6">
-                  <FallbackMessage type="error" message={errorEvent.message} />
-                </div>
-              )}
-            </div>
+                {!isStreaming && errorEvent && (
+                  <div className="mt-6">
+                    <FallbackMessage
+                      type="error"
+                      message={errorEvent.message}
+                    />
+                  </div>
+                )}
+
+                {/* 마지막 메시지가 user인데 응답이 없고 오늘 한도가 0이면 안내 표시.
+                    (재로드 시 SSE 이벤트가 휘발되므로 같은 케이스를 복구한다) */}
+                {!isStreaming &&
+                  !fallbackEvent &&
+                  !errorEvent &&
+                  messages.length > 0 &&
+                  messages[messages.length - 1].role === "user" &&
+                  remaining === 0 && (
+                    <div className="mt-6">
+                      <FallbackMessage
+                        type="error"
+                        message={RATE_LIMIT_MESSAGE}
+                      />
+                    </div>
+                  )}
+              </div>
+            )}
+          </div>
+          {pageState === "loaded" && (
+            <ChatInput
+              onSend={handleSend}
+              disabled={isStreaming || remaining === 0}
+              placeholder={remaining === 0 ? RATE_LIMIT_MESSAGE : undefined}
+              onDisabledAttempt={() => {
+                if (remaining === 0) {
+                  toast.error(RATE_LIMIT_MESSAGE);
+                } else if (isStreaming) {
+                  toast.warning("답변 생성이 끝난 후 다시 시도해주세요.");
+                }
+              }}
+              className="absolute inset-x-0 bottom-6 mx-auto w-[calc(100%-2rem)] max-w-184"
+            />
           )}
         </div>
-        <ChatInput
-          onSend={handleSend}
-          disabled={isStreaming}
-          className="absolute inset-x-0 bottom-6 mx-auto w-[calc(100%-2rem)] max-w-184"
-        />
-      </div>
+      )}
 
       <PDFViewer
         open={pdfViewer.open}

@@ -17,6 +17,7 @@ export interface ChatMessage {
   sources?: Source[];
   rawSources?: Source[]; // 본문 마커 {{N}} 매핑용 (dedup X, AI 송신 순서 그대로)
   suggestedQuestions?: string[];
+  partial?: boolean; // 스트리밍 중 오류로 중단된 부분 답변
   createdAt: string;
 }
 

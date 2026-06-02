@@ -92,9 +92,16 @@ apiClient의 baseUrl은 `/api/backend`로 설정. 브라우저 → Next.js → S
 | Admin | POST /admin/documents/{id}/reprocess | 완료 |
 | Admin | PATCH /admin/documents/{id}/category | 완료 |
 | Admin | DELETE /admin/documents/{id} | 완료 |
-| FAQ | 전체 | 시작 전 (후순위) |
+| Users | GET /users/me/chat-usage | 완료 |
+| Admin | GET /admin/users | 완료 |
+| Admin | PATCH /admin/users/{id}/chat-limit | 완료 |
+| Admin | PATCH /admin/users/chat-limit/bulk | 완료 |
+| Admin | POST /admin/users/{id}/chat-usage/reset | 완료 |
+| Admin | GET /admin/settings/default-chat-limit | 완료 |
+| Admin | PATCH /admin/settings/default-chat-limit | 완료 |
+| FAQ | GET /faqs (목록) | 완료 |
+| Admin | /admin/faqs CRUD | 완료 |
 | Admin | GET /admin/statistics | 시작 전 |
-| Admin | FAQ 후보 관리 | 시작 전 (후순위) |
 | Chat | GET /chat/recommended-questions | 시작 전 (후순위) |
 | Chat | 파일 업로드 | 시작 전 (후순위) |
 

@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api/client';
 import { delay } from '@/lib/api/mock';
+import { MOCK_CHAT_SESSIONS } from '@/constants/mock-chat';
 import type {
   ChatSessionListPageResponse,
   ChatSessionCreateResponse,
@@ -67,9 +68,33 @@ export async function createSession(): Promise<ChatSessionCreateResponse> {
 export async function getSessionDetail(sessionId: number): Promise<ChatSessionDetailResponse> {
   if (USE_MOCK) {
     await delay(300);
+    const session = MOCK_CHAT_SESSIONS[String(sessionId)];
+    if (session) {
+      return {
+        sessionId,
+        title: session.title,
+        sourceType: 'normal',
+        messages: session.messages.map((m) => ({
+          messageId: Number(m.messageId.replace(/\D/g, '')) || sessionId,
+          role: m.role,
+          content: m.content,
+          confidence: m.confidence ?? null,
+          partial: false,
+          createdAt: m.createdAt,
+          // 출처 카드/인용 매핑용 — chunkId가 없으면 0으로 채운다
+          sources: (m.sources ?? []).map((s) => ({
+            documentId: s.documentId,
+            documentTitle: s.documentTitle,
+            page: s.page,
+            chunkId: s.chunkId ?? 0,
+          })),
+        })),
+      };
+    }
+    // 정의되지 않은 세션은 빈 대화로 반환
     return {
       sessionId,
-      title: '채팅 세션',
+      title: '새 대화',
       sourceType: 'normal',
       messages: [],
     };
@@ -96,8 +121,7 @@ export async function updateSessionTitle(
   return apiClient.patch<ChatSessionUpdateResponse>(`/chat/sessions/${sessionId}`, { title });
 }
 
-// 추천 질문 — 백엔드(/chat/recommended-questions) 미구현 상태이므로 항상 mock 반환.
-// 백엔드 구현이 추가되면 USE_MOCK 분기를 제거하고 apiClient.get으로 대체한다.
+// 추천 질문 — 백엔드 GET /chat/recommended-questions 연결
 const RECOMMENDED_QUESTIONS_MOCK: RecommendedQuestionsResponse = {
   questions: [
     { questionId: 'rq-001', content: '이번 학기 수강신청 기간이 언제인가요?' },
@@ -109,6 +133,9 @@ const RECOMMENDED_QUESTIONS_MOCK: RecommendedQuestionsResponse = {
 };
 
 export async function getRecommendedQuestions(): Promise<RecommendedQuestionsResponse> {
-  await delay(300);
-  return RECOMMENDED_QUESTIONS_MOCK;
+  if (USE_MOCK) {
+    await delay(300);
+    return RECOMMENDED_QUESTIONS_MOCK;
+  }
+  return apiClient.get<RecommendedQuestionsResponse>('/chat/recommended-questions');
 }

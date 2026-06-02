@@ -2,8 +2,13 @@
 
 import { Menu } from "lucide-react";
 import { useSidebar } from "@/components/sidebar/SidebarContext";
+import { UsageBubble } from "@/components/chat/UsageBubble";
 
-export function ChatHeader() {
+interface ChatHeaderProps {
+  remaining?: number | null;
+}
+
+export function ChatHeader({ remaining }: ChatHeaderProps) {
   const { setOpen } = useSidebar();
 
   return (
@@ -17,7 +22,8 @@ export function ChatHeader() {
       <h2 className="flex-1 text-lg font-semibold text-foreground md:text-left text-center">
         KDD
       </h2>
-      <div className="size-9 md:hidden" />
+      {remaining != null && <UsageBubble remaining={remaining} />}
+      {remaining == null && <div className="size-9 md:hidden" />}
     </header>
   );
 }
