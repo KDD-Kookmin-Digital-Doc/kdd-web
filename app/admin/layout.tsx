@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { MessageSquare, FileText, CheckSquare, Users } from "lucide-react";
@@ -24,10 +24,25 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  if (!isLoading && user?.role !== "admin") {
-    router.replace("/chat");
-    return null;
+  const isUnauthorized = !isLoading && user?.role !== "admin";
+
+  // 리다이렉트는 렌더 중이 아니라 커밋 후 이펙트에서 수행한다.
+  // (렌더 중 router.replace 호출 시 "Cannot update a component while rendering" 에러 발생)
+  useEffect(() => {
+    if (isUnauthorized) {
+      router.replace("/chat");
+    }
+  }, [isUnauthorized, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-background">
+        <span className="text-sm text-muted-foreground">불러오는 중...</span>
+      </div>
+    );
   }
+
+  if (isUnauthorized) return null;
 
   return <>{children}</>;
 }

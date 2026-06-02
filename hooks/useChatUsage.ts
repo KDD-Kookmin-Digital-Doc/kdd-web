@@ -34,6 +34,16 @@ function getMsUntilKSTMidnight(): number {
 
 const RETRY_DELAY_MS = 30_000;
 
+/**
+ * 일일 채팅 사용량(남은 횟수, 한도, 사용량)을 관리하는 훅.
+ *
+ * 마운트 시 사용량을 조회하고, 매일 자정(KST, UTC+9)에 자동으로 새로고침한다.
+ * 자정 새로고침이 실패하면 30초 뒤 한 번 재시도한 뒤 다음 자정 타이머를 다시 건다.
+ * SSE `done` 이벤트나 429 응답으로 남은 횟수가 바뀌면 `setRemaining`으로 즉시 반영한다.
+ *
+ * @returns `remaining`/`dailyLimit`/`usedToday`(미로딩 시 null), `isLoading`, `error`,
+ *          서버 재조회용 `refresh`, 로컬 즉시 갱신용 `setRemaining`
+ */
 export function useChatUsage(): UseChatUsageReturn {
   const [remaining, setRemainingState] = useState<number | null>(null);
   const [dailyLimit, setDailyLimit] = useState<number | null>(null);

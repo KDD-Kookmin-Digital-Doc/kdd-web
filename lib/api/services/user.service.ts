@@ -9,7 +9,8 @@ const MOCK_USER: UserResponse = {
   userId: 1,
   email: 'honggildong@kookmin.ac.kr',
   name: '홍길동',
-  role: 'user',
+  // mock 모드에서는 관리자 대시보드까지 전체 기능을 둘러볼 수 있도록 admin으로 설정
+  role: 'admin',
   profileCompleted: true,
   userType: 'student',
   studentId: '20201234',

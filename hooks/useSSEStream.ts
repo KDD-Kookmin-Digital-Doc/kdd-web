@@ -38,6 +38,19 @@ const previewTail = (s: string, n = 60) => {
   return JSON.stringify(tail);
 };
 
+/**
+ * 채팅 메시지 전송과 SSE(Server-Sent Events) 스트리밍 응답을 관리하는 훅.
+ *
+ * `fetch` + `ReadableStream`으로 `text/event-stream`을 직접 파싱한다. (EventSource는
+ * POST·Authorization 헤더를 못 쓰므로 사용하지 않는다.) 멀티바이트(한국어 등) 청크 경계,
+ * 부분 JSON 프레임, terminal 이벤트(done/error/fallback) 이후의 거짓 에러를 모두 방어한다.
+ *
+ * `NEXT_PUBLIC_USE_MOCK=true`이면 네트워크 없이 mock 시퀀스를 재생한다.
+ *
+ * @param sessionId - 메시지를 전송할 채팅 세션 ID
+ * @param options   - 콜백: `onDone`(남은 횟수 수신), `onRateLimit`(429), `onError`(네트워크 오류)
+ * @returns 누적 이벤트 배열, 스트리밍 여부, 에러, `sendMessage`, `reset`
+ */
 export function useSSEStream(
   sessionId: string,
   options?: UseSSEStreamOptions,

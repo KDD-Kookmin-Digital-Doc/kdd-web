@@ -125,7 +125,7 @@ export default function ChatDetailPage({ params }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { renameChat } = useChatContext();
-  const { remaining, setRemaining, refresh } = useChatUsage();
+  const { remaining, setRemaining } = useChatUsage();
   const toast = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionLoaded, setSessionLoaded] = useState(false);
