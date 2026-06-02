@@ -68,39 +68,39 @@
 
 | 로그인 (온보딩) | 프로필 입력 | 채팅 시작 화면 |
 |:---:|:---:|:---:|
-| ![로그인](.github/screenshots/01-login.png) | ![프로필 입력](.github/screenshots/01b-login-profile.png) | ![채팅 시작](.github/screenshots/02-chat-welcome.png) |
+| ![로그인](screenshots/01-login.png) | ![프로필 입력](screenshots/01b-login-profile.png) | ![채팅 시작](screenshots/02-chat-welcome.png) |
 
 ### 대화형 AI 채팅
 
 | 채팅 세션 (신뢰도·출처) | 출처 인용 펼침 | 채팅 검색 모달 |
 |:---:|:---:|:---:|
-| ![채팅 세션](.github/screenshots/03-chat-session.png) | ![출처 인용](.github/screenshots/04-chat-sources.png) | ![검색 모달](.github/screenshots/05-search-modal.png) |
+| ![채팅 세션](screenshots/03-chat-session.png) | ![출처 인용](screenshots/04-chat-sources.png) | ![검색 모달](screenshots/05-search-modal.png) |
 
 ### 자료실 & FAQ
 
 | FAQ 목록 | FAQ 답변 펼침 |
 |:---:|:---:|
-| ![FAQ](.github/screenshots/06-faq.png) | ![FAQ 펼침](.github/screenshots/07-faq-expanded.png) |
+| ![FAQ](screenshots/06-faq.png) | ![FAQ 펼침](screenshots/07-faq-expanded.png) |
 
 | 자료실 | 문서 상세 |
 |:---:|:---:|
-| ![자료실](.github/screenshots/08-resources.png) | ![문서 상세](.github/screenshots/09-resource-detail.png) |
+| ![자료실](screenshots/08-resources.png) | ![문서 상세](screenshots/09-resource-detail.png) |
 
 ### 관리자 대시보드
 
 | 통계 | 문서 관리 |
 |:---:|:---:|
-| ![관리자 통계](.github/screenshots/10-admin-dashboard.png) | ![문서 관리](.github/screenshots/11-admin-documents.png) |
+| ![관리자 통계](screenshots/10-admin-dashboard.png) | ![문서 관리](screenshots/11-admin-documents.png) |
 
 | FAQ 후보 관리 | 사용자 관리 |
 |:---:|:---:|
-| ![FAQ 관리](.github/screenshots/12-admin-faq.png) | ![사용자 관리](.github/screenshots/12b-admin-users.png) |
+| ![FAQ 관리](screenshots/12-admin-faq.png) | ![사용자 관리](screenshots/12b-admin-users.png) |
 
 ### 모바일 반응형
 
 | 채팅 | 사이드바 | FAQ | 자료실 |
 |:---:|:---:|:---:|:---:|
-| ![모바일 채팅](.github/screenshots/13-mobile-chat.png) | ![모바일 사이드바](.github/screenshots/14-mobile-sidebar.png) | ![모바일 FAQ](.github/screenshots/15-mobile-faq.png) | ![모바일 자료실](.github/screenshots/16-mobile-resources.png) |
+| ![모바일 채팅](screenshots/13-mobile-chat.png) | ![모바일 사이드바](screenshots/14-mobile-sidebar.png) | ![모바일 FAQ](screenshots/15-mobile-faq.png) | ![모바일 자료실](screenshots/16-mobile-resources.png) |
 
 <!--
 📌 발표 자료(PPT)용 추가 이미지 자리 — 아래는 직접 채워 넣으면 좋은 항목입니다:
@@ -257,7 +257,7 @@ NEXT_PUBLIC_USE_MOCK=true
 
 ## 📄 라이선스
 
-이 프로젝트는 [MIT License](LICENSE) 를 따릅니다.
+이 프로젝트는 [MIT License](../LICENSE) 를 따릅니다.
 
 <div align="center">
 <br />
