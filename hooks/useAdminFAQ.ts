@@ -22,7 +22,7 @@ export function useAdminFAQ() {
   const loadFAQs = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await getAdminFAQList({ page: 1, pageSize: 100 });
+      const res = await getAdminFAQList({ page: 0, pageSize: 100 });
       setFaqs(res.data);
     } catch {
       setFaqs([]);
@@ -34,7 +34,7 @@ export function useAdminFAQ() {
   const loadCandidates = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await getFAQCandidates({ page: 1, pageSize: 100 });
+      const res = await getFAQCandidates({ page: 0, pageSize: 100 });
       setCandidates(res.data);
     } catch {
       setCandidates([]);
@@ -60,31 +60,37 @@ export function useAdminFAQ() {
     }
   }, [loadFAQs]);
 
-  const handleApproveCandidate = useCallback(async (id: string) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.candidateId === id ? { ...c, status: "approved" as const } : c
-      )
-    );
-    try {
-      await approveCandidate(id);
-    } catch {
-      loadCandidates();
-    }
-  }, [loadCandidates]);
+  const handleApproveCandidate = useCallback(
+    async (id: string, topic: string) => {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.candidateId === id ? { ...c, status: "approved" as const } : c,
+        ),
+      );
+      try {
+        await approveCandidate(id, topic);
+      } catch {
+        loadCandidates();
+      }
+    },
+    [loadCandidates],
+  );
 
-  const handleRejectCandidate = useCallback(async (id: string) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.candidateId === id ? { ...c, status: "rejected" as const } : c
-      )
-    );
-    try {
-      await rejectCandidate(id);
-    } catch {
-      loadCandidates();
-    }
-  }, [loadCandidates]);
+  const handleRejectCandidate = useCallback(
+    async (id: string) => {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.candidateId === id ? { ...c, status: "rejected" as const } : c,
+        ),
+      );
+      try {
+        await rejectCandidate(id);
+      } catch {
+        loadCandidates();
+      }
+    },
+    [loadCandidates],
+  );
 
   return {
     activeTab,

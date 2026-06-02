@@ -15,7 +15,7 @@ const TOPIC_STYLES: Record<string, { label: string; bg: string; fg: string }> = 
   curriculum: { label: "전공·교과", bg: "bg-topic-major-bg", fg: "text-topic-major-fg" },
   career: { label: "취업·현장실습", bg: "bg-topic-career-bg", fg: "text-topic-career-fg" },
   event: { label: "행사·특강", bg: "bg-topic-event-bg", fg: "text-topic-event-fg" },
-  etc: { label: "기타", bg: "bg-topic-other-bg", fg: "text-topic-other-fg" },
+  other: { label: "기타", bg: "bg-topic-other-bg", fg: "text-topic-other-fg" },
 };
 
 const DEFAULT_TOPIC = { label: "", bg: "bg-muted", fg: "text-foreground" };

@@ -64,7 +64,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
 
   // Auth
   [ERROR_CODES.INVALID_AUTH_CODE]: '유효하지 않은 인증 코드입니다.',
-  [ERROR_CODES.UNAUTHORIZED_DOMAIN]: '국민대학교 이메일(@kookmin.ac.kr) 계정으로만 로그인할 수 있습니다. 다른 계정으로 로그인했다면 Google 계정 선택 화면에서 학교 계정으로 다시 시도해 주세요.',
+  [ERROR_CODES.UNAUTHORIZED_DOMAIN]: '허용되지 않은 이메일 도메인입니다. 다른 계정으로 로그인했다면 Google 계정 선택 화면에서 다시 시도해 주세요.',
   [ERROR_CODES.UNVERIFIED_EMAIL]: '이메일 인증이 완료되지 않았습니다.',
   [ERROR_CODES.ACCOUNT_DEACTIVATED]: '비활성화된 계정입니다.',
 

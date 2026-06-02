@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
 import {
   getSessions,
   createSession,
@@ -32,11 +33,16 @@ const ChatContext = createContext<ChatContextValue>({
 });
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 마운트 시 세션 목록 로드
+  // 인증 완료 후 세션 목록 로드
   useEffect(() => {
+    if (authLoading || !isAuthenticated) {
+      return;
+    }
+
     getSessions({ page: 0, pageSize: 50 })
       .then((res) => {
         setChatHistory(
@@ -50,7 +56,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setChatHistory([]);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   const addChat = useCallback((id: string, title: string) => {
     setChatHistory((prev) => {

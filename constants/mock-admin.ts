@@ -16,10 +16,8 @@ export const MOCK_ADMIN_STATISTICS: AdminStatistics = {
     totalUsers: 12847,
     byUserType: { student: 10278, staff: 2569 },
     byDepartment: {
-      소프트웨어학부: 5243,
-      "AI빅데이터융합경영학과": 3184,
-      빅데이터경영통계학과: 2470,
-      기타: 1950,
+      software: 5243,
+      ai: 3184,
     },
     byGrade: {
       "1": 3120,
@@ -126,7 +124,7 @@ export const MOCK_FAQ_CANDIDATES: FAQCandidate[] = [
     createdAt: "2026-04-07T10:00:00Z",
     frequency: 23,
     topic: "academic",
-    draftAnswer:
+    answerDraft:
       "계절학기 수강신청은 학기 종료 후 약 2주 뒤에 시작됩니다. 정확한 일정은 학사일정을 확인하세요.",
   },
   {
@@ -137,7 +135,7 @@ export const MOCK_FAQ_CANDIDATES: FAQCandidate[] = [
     createdAt: "2026-04-06T14:00:00Z",
     frequency: 18,
     topic: "graduation",
-    draftAnswer:
+    answerDraft:
       "졸업유예는 KLAS에서 신청할 수 있으며, 졸업 예정 학기에 신청하시면 됩니다.",
   },
   {
@@ -156,8 +154,9 @@ export const MOCK_FAQ_CANDIDATES: FAQCandidate[] = [
     status: "rejected",
     createdAt: "2026-04-04T11:00:00Z",
     frequency: 12,
-    topic: "etc",
-    draftAnswer: "학생증 재발급은 학생처에 방문하시거나 온라인으로 신청하실 수 있습니다.",
+    topic: "other",
+    answerDraft:
+      "학생증 재발급은 학생처에 방문하시거나 온라인으로 신청하실 수 있습니다.",
   },
   {
     candidateId: "cand-005",
@@ -176,7 +175,7 @@ export const MOCK_FAQ_CANDIDATES: FAQCandidate[] = [
     createdAt: "2026-04-02T13:00:00Z",
     frequency: 9,
     topic: "academic",
-    draftAnswer:
+    answerDraft:
       "교환학생 신청은 학교 홈페이지를 통해 신청하실 수 있습니다. 어학 성적 등 자격 요건이 있으니 공고문을 확인하세요.",
   },
   {

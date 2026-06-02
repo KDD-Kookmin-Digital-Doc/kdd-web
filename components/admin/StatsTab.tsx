@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   MessageSquare,
   FileText,
@@ -82,7 +81,6 @@ function StatCard({
 
 export function StatsTab() {
   const { statistics, isLoading } = useAdminStats();
-  const [hoveredCat, setHoveredCat] = useState<string | null>(null);
 
   if (isLoading || !statistics) {
     return (
@@ -93,39 +91,22 @@ export function StatsTab() {
   }
 
   const { overview, categories, users } = statistics;
-  const maxCount = Math.max(...categories.map((c) => c.questionCount));
   const totalCategoryCount = categories.reduce(
     (s, c) => s + c.questionCount,
-    0
+    0,
   );
 
   const studentCount = users.byUserType.student ?? 0;
   const staffCount = users.byUserType.staff ?? 0;
   const totalUsers = studentCount + staffCount;
   const studentPct =
-    totalUsers > 0
-      ? ((studentCount / totalUsers) * 100).toFixed(1)
-      : "0.0";
+    totalUsers > 0 ? ((studentCount / totalUsers) * 100).toFixed(1) : "0.0";
   const staffPct =
-    totalUsers > 0
-      ? ((staffCount / totalUsers) * 100).toFixed(1)
-      : "0.0";
+    totalUsers > 0 ? ((staffCount / totalUsers) * 100).toFixed(1) : "0.0";
 
   return (
     <div className="px-4 py-6">
       <div className="mx-auto max-w-4xl space-y-6">
-        {/* 데모 데이터 안내 */}
-        <div className="rounded-xl border border-dashed border-border bg-secondary/40 px-4 py-3 text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">데모 데이터</span>
-          <span className="ml-2">
-            백엔드 통계 API(
-            <code className="mx-0.5 rounded bg-background px-1 py-0.5 font-mono text-[11px]">
-              /admin/statistics
-            </code>
-            )가 아직 구현되지 않아 임시 값으로 표시됩니다.
-          </span>
-        </div>
-
         {/* ── 전체 서비스 사용 통계 ── */}
         <section>
           <SectionTitle
@@ -153,51 +134,8 @@ export function StatsTab() {
             title="카테고리별 질문 통계"
           />
           <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
-            {/* 수직 바 차트 */}
-            <div className="px-5 pb-3 pt-5">
-              <div className="flex h-40 items-end gap-1.5">
-                {categories.map((c) => {
-                  const color = CATEGORY_COLORS[c.category] ?? DEFAULT_COLOR;
-                  const heightPct =
-                    maxCount > 0 ? (c.questionCount / maxCount) * 100 : 0;
-                  const isHovered = hoveredCat === c.category;
-                  return (
-                    <div
-                      key={c.category}
-                      className="relative flex h-full flex-1 flex-col items-center justify-end"
-                      onMouseEnter={() => setHoveredCat(c.category)}
-                      onMouseLeave={() => setHoveredCat(null)}
-                    >
-                      {isHovered && (
-                        <div className="absolute -top-1 left-1/2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] font-semibold text-background">
-                          {c.questionCount.toLocaleString()}건
-                        </div>
-                      )}
-                      <div
-                        className="w-full cursor-pointer rounded-t-md transition-all duration-300"
-                        style={{
-                          height: `${Math.max(heightPct, 4)}%`,
-                          backgroundColor: color.fg,
-                          opacity: isHovered ? 1 : 0.75,
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-2 flex gap-1.5">
-                {categories.map((c) => (
-                  <div key={c.category} className="flex-1 text-center">
-                    <p className="truncate text-[10px] leading-tight text-muted-foreground">
-                      {c.category}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* 카테고리 테이블 */}
-            <div className="border-t border-border">
+            <div>
               {categories.map((c, i) => {
                 const color = CATEGORY_COLORS[c.category] ?? DEFAULT_COLOR;
                 const pct =

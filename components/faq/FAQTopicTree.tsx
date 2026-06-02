@@ -24,7 +24,7 @@ const TOPIC_LABELS: Record<string, string> = {
   curriculum: "전공·교과",
   career: "취업·현장실습",
   event: "행사·특강",
-  etc: "기타",
+  other: "기타",
 };
 
 function getTopicLabel(topic: string): string {

@@ -6,6 +6,7 @@ import type {
   FAQDetailResponse,
   FAQTopicsResponse,
   FAQVoteRequest,
+  FAQChatStartResponse,
   FAQItem,
   FAQTopic,
 } from "@/types/api/faq";
@@ -128,7 +129,7 @@ export async function getFAQDetail(
       faqId: String(faqId),
       question: "질문을 찾을 수 없습니다",
       answer: "",
-      topic: "etc",
+      topic: "other",
       createdAt: new Date().toISOString(),
     };
   }
@@ -165,4 +166,38 @@ export async function voteFAQ(
   _data: FAQVoteRequest,
 ): Promise<void> {
   await delay(100);
+}
+
+// ── FAQ 기반 채팅 시작 ─────────────────────────────────────────────
+// POST /faqs/{faqId}/chat — FAQ 질문/답변을 초기 메시지로 갖는 채팅 세션 생성
+export async function startFaqChat(
+  faqId: string,
+): Promise<FAQChatStartResponse> {
+  if (USE_MOCK) {
+    await delay(400);
+    const { MOCK_FAQ_ITEMS } = await import("@/constants/mock-faq");
+    const faq = MOCK_FAQ_ITEMS.find((f) => f.faqId === faqId);
+    const now = new Date().toISOString();
+    return {
+      sessionId: String(Date.now()),
+      messages: [
+        {
+          messageId: String(Date.now()),
+          role: "user",
+          content: faq?.question ?? "FAQ 질문",
+          createdAt: now,
+        },
+        {
+          messageId: String(Date.now() + 1),
+          role: "assistant",
+          content: faq?.answer ?? "FAQ 답변",
+          sources: [],
+          confidence: null,
+          createdAt: now,
+        },
+      ],
+    };
+  }
+
+  return apiClient.post<FAQChatStartResponse>(`/faqs/${faqId}/chat`);
 }

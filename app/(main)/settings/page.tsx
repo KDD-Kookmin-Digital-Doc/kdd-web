@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useChatUsage } from "@/hooks/useChatUsage";
 import { updateMyInfo } from "@/lib/api/services/user.service";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApiError, ERROR_MESSAGES } from "@/lib/api/errors";
+import { resetMyProfile } from "@/lib/api/services/admin.service";
 import {
   studentSettingsSchema,
   staffSettingsSchema,
@@ -79,10 +81,25 @@ function FieldRow({ label, htmlFor, error, children }: FieldRowProps) {
 
 export default function SettingsPage() {
   const { user, refreshUser, isLoading } = useAuth();
+  const {
+    remaining,
+    dailyLimit,
+    usedToday,
+    isLoading: usageLoading,
+    error: usageError,
+    refresh: usageRefresh,
+  } = useChatUsage();
+
+  const handleUsageRetry = () => {
+    usageRefresh();
+  };
 
   const [isSaving, setIsSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [savedError, setSavedError] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<boolean>(false);
 
   // 공통
   const [name, setName] = useState("");
@@ -214,6 +231,53 @@ export default function SettingsPage() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+          {/* 채팅 사용량 섹션 */}
+          <section className="rounded-lg border border-border bg-white p-6">
+            <h3 className="mb-4 text-base font-semibold text-foreground">채팅 사용량</h3>
+
+            {usageLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                <span>사용량 정보를 불러오는 중...</span>
+              </div>
+            )}
+
+            {usageError && !usageLoading && (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-destructive">사용량 정보를 불러올 수 없습니다.</p>
+                <button
+                  onClick={handleUsageRetry}
+                  className="w-fit rounded-lg bg-primary px-3 py-1.5 text-xs text-white hover:bg-primary/90"
+                >
+                  재시도
+                </button>
+              </div>
+            )}
+
+            {!usageLoading && !usageError && dailyLimit != null && (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">일일 한도</p>
+                  <p className="text-lg font-medium text-foreground">{dailyLimit}회</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">오늘 사용</p>
+                  <p className="text-lg font-medium text-foreground">{usedToday}회</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">남은 횟수</p>
+                  <p className={cn("text-lg font-medium", remaining === 0 ? "text-destructive" : "text-foreground")}>
+                    {remaining}회
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">초기화 시간</p>
+                  <p className="text-lg font-medium text-foreground">매일 00:00 (KST)</p>
+                </div>
+              </div>
+            )}
+          </section>
+
           {/* 내 정보 섹션 */}
           <section className="rounded-xl border border-border p-5 space-y-4">
             <h2 className="text-sm font-semibold text-foreground">내 정보</h2>
@@ -450,6 +514,65 @@ export default function SettingsPage() {
               )}
             </Button>
           </section>
+
+          {/* 관리자 전용: 프로필 리셋 */}
+          {user?.role === "admin" && (
+            <section className="rounded-xl border border-destructive/30 p-5 space-y-4">
+              <h2 className="text-sm font-semibold text-foreground">개발/테스트 도구</h2>
+              <p className="text-xs text-muted-foreground">
+                본인의 프로필 데이터를 삭제하고 회원가입 플로우를 다시 테스트할 수 있습니다.
+                admin 권한과 로그인 세션은 유지됩니다.
+              </p>
+
+              {resetMessage && (
+                <p
+                  className={`text-xs ${
+                    resetError ? "text-destructive" : "text-primary"
+                  }`}
+                >
+                  {resetMessage}
+                </p>
+              )}
+
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  if (!confirm("정말 프로필을 초기화하시겠습니까?\n회원가입 플로우로 돌아갑니다.")) return;
+                  setIsResetting(true);
+                  setResetMessage(null);
+                  setResetError(false);
+                  try {
+                    await resetMyProfile();
+                    setResetMessage("프로필이 초기화되었습니다. 페이지를 새로고침합니다...");
+                    setResetError(false);
+                    await refreshUser();
+                    // profileCompleted=false가 되면 미들웨어가 /login으로 리다이렉트
+                    window.location.href = "/login";
+                  } catch (err) {
+                    const msg =
+                      err instanceof ApiError
+                        ? (ERROR_MESSAGES[err.code] ?? err.message)
+                        : "프로필 초기화에 실패했습니다.";
+                    setResetMessage(msg);
+                    setResetError(true);
+                  } finally {
+                    setIsResetting(false);
+                  }
+                }}
+                disabled={isResetting}
+                className="w-full"
+              >
+                {isResetting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    초기화 중...
+                  </>
+                ) : (
+                  "프로필 초기화 (회원가입 재테스트)"
+                )}
+              </Button>
+            </section>
+          )}
         </div>
       </div>
     </div>

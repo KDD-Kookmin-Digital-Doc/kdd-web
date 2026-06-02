@@ -1,3 +1,5 @@
+import type { PageResponse } from './common';
+
 export interface AdminDocument {
   id: number;
   title: string;
@@ -12,8 +14,16 @@ export interface AdminStatistics {
   users: {
     totalUsers: number;
     byUserType: { student: number; staff: number };
-    byDepartment: Record<string, number>;
-    byGrade: Record<string, number>;
+    /** 백엔드 키: "software" | "ai" (StudentDepartment enum 값) */
+    byDepartment: { software: number; ai: number };
+    /** 백엔드 키: "1" | "2" | "3" | "4" | "5_or_above" */
+    byGrade: {
+      "1": number;
+      "2": number;
+      "3": number;
+      "4": number;
+      "5_or_above": number;
+    };
   };
   overview: {
     totalQuestions: number;
@@ -29,14 +39,16 @@ export interface AdminStatistics {
 }
 
 export interface FAQCandidate {
+  /** 백엔드 Long → string 변환 */
   candidateId: string;
   question: string;
-  draftAnswer?: string;
+  /** 백엔드 필드명: answerDraft */
+  answerDraft?: string;
   frequency: number;
   topic: string;
-  createdAt: string;
-  /** 프론트 전용 — API 응답에 없음, 승인/반려 상태를 로컬에서 관리 */
+  /** 백엔드 반환값: "pending" | "approved" | "rejected" */
   status?: "pending" | "approved" | "rejected" | "registered";
+  createdAt: string;
   /** 프론트 전용 — API 응답에 없음 */
   source?: string;
 }
@@ -85,4 +97,70 @@ export interface DocumentResponse {
   originalFilename: string;
   fileSize: number;
   createdAt: string;
+}
+
+/** GET /admin/users 요청 파라미터 */
+export interface AdminUserListRequest {
+  page?: number;
+  size?: number;
+  userType?: 'student' | 'staff';
+  role?: 'user' | 'admin';
+  search?: string;
+}
+
+/** GET /admin/users 응답 내 사용자 항목 */
+export interface AdminUserItem {
+  id: number;
+  name: string;
+  email: string;
+  userType: 'student' | 'staff';
+  role: 'user' | 'admin';
+  dailyChatLimit: number;
+  todayUsed: number;
+}
+
+/** GET /admin/users 페이지 응답 */
+export type AdminUserListPageResponse = PageResponse<AdminUserItem>;
+
+/** PATCH /admin/users/{id}/chat-limit 요청 */
+export interface UpdateUserChatLimitRequest {
+  dailyChatLimit: number;
+}
+
+/** PATCH /admin/users/{id}/chat-limit 응답 — AdminUserListItemResponse 반환 */
+export type UpdateUserChatLimitResponse = AdminUserItem;
+
+/** PATCH /admin/users/chat-limit/bulk 요청 */
+export interface BulkUpdateChatLimitRequest {
+  userIds: number[];
+  dailyChatLimit: number;
+}
+
+/** PATCH /admin/users/chat-limit/bulk 응답 */
+export interface BulkUpdateChatLimitResponse {
+  updatedCount: number;
+  dailyChatLimit: number;
+}
+
+/** POST /admin/users/{id}/chat-usage/reset 응답 — ChatUsageResponse 반환 */
+export interface ResetUserUsageResponse {
+  dailyChatLimit: number;
+  todayUsed: number;
+  remaining: number;
+  resetsAt: string;
+}
+
+/** GET /admin/settings/default-chat-limit 응답 */
+export interface DefaultChatLimitResponse {
+  defaultChatLimit: number;
+}
+
+/** PATCH /admin/settings/default-chat-limit 요청 */
+export interface UpdateDefaultChatLimitRequest {
+  defaultChatLimit: number;
+}
+
+/** PATCH /admin/settings/default-chat-limit 응답 */
+export interface UpdateDefaultChatLimitResponse {
+  defaultChatLimit: number;
 }

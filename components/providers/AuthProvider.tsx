@@ -44,6 +44,18 @@ function clearAuthCookies(): void {
   document.cookie = "profile_completed=; path=/; max-age=0";
 }
 
+/**
+ * 전역 인증 상태 Provider.
+ *
+ * 앱 마운트 시 메모리에 Access Token이 없으면 Refresh Token으로 세션 복원을 시도하고,
+ * 성공하면 사용자 정보를 로드해 컨텍스트에 채운다. 미들웨어 라우팅 가드를 위해
+ * `user_role`·`profile_completed` 쿠키도 동기화한다.
+ *
+ * 제공 값: `user`, `isLoading`, `isAuthenticated`와 `login`/`logout`/`refreshUser` 액션.
+ * 하위 컴포넌트는 {@link useAuth} 훅으로 접근한다.
+ *
+ * @param props.children Provider로 감쌀 하위 트리
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<UserResponse | null>(null);

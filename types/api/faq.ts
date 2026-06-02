@@ -52,3 +52,23 @@ export interface FAQDetailResponse {
   topic: string;
   createdAt: string;
 }
+
+/** FAQ 기반 채팅 시작 응답 (POST /faqs/{faqId}/chat) */
+export interface FAQChatStartResponse {
+  sessionId: string;
+  messages: FAQChatMessage[];
+}
+
+export interface FAQChatMessage {
+  messageId: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: Array<{
+    documentId: number;
+    documentTitle: string;
+    page: number;
+    chunkId?: number;
+  }>;
+  confidence?: string | null;
+  createdAt: string;
+}

@@ -40,34 +40,49 @@ export default function ResourceFilePage({
   const [relatedFaqs, setRelatedFaqs] = useState<FAQItem[]>([]);
 
   useEffect(() => {
-    const docId = Number(fileId);
-    if (isNaN(docId)) {
-      setIsLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    setIsLoading(true);
-    getDocumentDetail(docId)
-      .then((detail) => {
+    // setState를 이펙트 본문에서 동기 호출하면 cascading render 경고가 발생한다.
+    // 비동기 함수로 감싸 모든 상태 갱신이 await 경계 또는 콜백 안에서 일어나도록 한다.
+    async function load() {
+      const docId = Number(fileId);
+      if (!Number.isInteger(docId)) {
+        if (!cancelled) setIsLoading(false);
+        return;
+      }
+
+      try {
+        const detail = await getDocumentDetail(docId);
+        if (cancelled) return;
         setDocument(detail);
 
         // 관련 FAQ 로드: 전체 목록을 받아 카테고리명 기반으로 클라이언트 필터링
         // (백엔드 topic enum과 프론트 카테고리명이 일치하지 않으므로 전체 로드 후 fuzzy 매칭)
-        getFAQList()
-          .then((res) => {
-            const categoryLower = detail.category.toLowerCase();
-            const matched = res.data.filter(
-              (f) =>
-                f.topic === detail.category ||
-                f.question.toLowerCase().includes(categoryLower) ||
-                f.answer.toLowerCase().includes(categoryLower)
-            );
-            setRelatedFaqs(matched.slice(0, 5));
-          })
-          .catch(() => setRelatedFaqs([]));
-      })
-      .catch(() => setDocument(null))
-      .finally(() => setIsLoading(false));
+        try {
+          const res = await getFAQList();
+          if (cancelled) return;
+          const categoryLower = detail.category.toLowerCase();
+          const matched = res.data.filter(
+            (f) =>
+              f.topic === detail.category ||
+              f.question.toLowerCase().includes(categoryLower) ||
+              f.answer.toLowerCase().includes(categoryLower),
+          );
+          setRelatedFaqs(matched.slice(0, 5));
+        } catch {
+          if (!cancelled) setRelatedFaqs([]);
+        }
+      } catch {
+        if (!cancelled) setDocument(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [fileId]);
 
   const handleOpenPDF = () => {

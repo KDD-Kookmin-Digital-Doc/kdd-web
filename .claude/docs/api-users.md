@@ -43,7 +43,7 @@
 | admissionYear | number \| null | 입학년도 (학생만) |
 | academicStatus | string \| null | "enrolled" \| "on_leave" \| "returning" (학생만) |
 | additionalInfo | string \| null | 추가 정보 (학생만) |
-| staffDepartment | string \| null | 소속 부서 (교직원만) |
+| staffDepartment | string \| null | "student_support" \| "academic_affairs" \| "admissions" \| "industry_cooperation" \| "international_office" \| "general_affairs" \| "other" (교직원만) |
 | jobDescription | string \| null | 담당 업무 (교직원만) |
 
 ### 에러 응답
@@ -154,3 +154,31 @@ record UserResponse(
     String staffDepartment, String jobDescription
 ) {}
 ```
+
+---
+
+## GET /users/me/chat-usage — 내 채팅 사용량 조회
+
+### 성공 응답 (200)
+```json
+{
+  "dailyChatLimit": 30,
+  "todayUsed": 15,
+  "remaining": 15,
+  "resetsAt": "2026-04-17T15:00:00Z"
+}
+```
+
+### 필드 설명
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| dailyChatLimit | number | 일일 채팅 한도 |
+| todayUsed | number | 오늘 사용 횟수 |
+| remaining | number | 남은 횟수 |
+| resetsAt | string | 다음 초기화 시각 (ISO 8601 UTC) |
+
+### 에러 응답
+| 코드 | error |
+|------|-------|
+| 401 | UNAUTHORIZED |
+| 404 | USER_NOT_FOUND |
