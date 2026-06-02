@@ -26,15 +26,29 @@ export function useFAQ() {
   }, []);
 
   // FAQ 목록 로드
+  // setState를 이펙트 본문에서 동기 호출하지 않도록 async 함수로 감싼다 (cascading render 방지).
   useEffect(() => {
-    setIsLoading(true);
-    getFAQList({
-      topic: selectedTopic !== "all" ? selectedTopic : undefined,
-      sort,
-    })
-      .then((res) => setFaqs(res.data))
-      .catch(() => setFaqs([]))
-      .finally(() => setIsLoading(false));
+    let cancelled = false;
+
+    async function load() {
+      setIsLoading(true);
+      try {
+        const res = await getFAQList({
+          topic: selectedTopic !== "all" ? selectedTopic : undefined,
+          sort,
+        });
+        if (!cancelled) setFaqs(res.data);
+      } catch {
+        if (!cancelled) setFaqs([]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedTopic, sort]);
 
   const filteredFAQs: FAQItem[] = faqs.filter((faq) => {

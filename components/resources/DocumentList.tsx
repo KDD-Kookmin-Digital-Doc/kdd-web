@@ -22,9 +22,7 @@ interface DocumentListProps {
 export function DocumentList({
   documents,
   searchQuery,
-  sort,
   onSearchChange,
-  onSortChange,
   totalCount,
   onDocumentClick,
   categories,

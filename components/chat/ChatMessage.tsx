@@ -17,6 +17,21 @@ interface ChatMessageProps {
   onOpenPDF?: (documentId: number, page: number, chunkId?: number) => void;
 }
 
+/**
+ * 채팅 메시지 버블 컴포넌트.
+ *
+ * 사용자/어시스턴트 메시지를 좌우 정렬로 렌더링하며, 어시스턴트 답변의 경우
+ * 신뢰도 배지, 인라인 출처(citation), 추천 질문, 복사 버튼을 함께 표시한다.
+ *
+ * 출처 표시는 두 가지 경로를 지원한다.
+ * - `rawSources`가 있으면 본문 `{{N}}` 마커를 인라인 citation으로 렌더링한다.
+ * - 없으면(레거시 메시지) 하단의 접이식 출처 카드 목록으로 폴백한다.
+ *
+ * @param props.message         렌더링할 메시지 데이터
+ * @param props.isStreaming     스트리밍 진행 중 여부 (본문이 비어 있으면 로딩 표시)
+ * @param props.onSelectQuestion 추천 질문 클릭 핸들러
+ * @param props.onOpenPDF       출처 클릭 시 PDF 뷰어를 여는 핸들러
+ */
 export function ChatMessage({
   message,
   isStreaming = false,

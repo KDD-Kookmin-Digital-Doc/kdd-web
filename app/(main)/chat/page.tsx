@@ -29,8 +29,9 @@ export default function ChatPage() {
   // FAQ "채팅에서 이어가기" 등에서 넘어온 초기 질문
   const initialQuery = searchParams.get("q") ?? undefined;
 
+  // 추천 질문 로드 (마운트 1회). 로딩 상태는 useState(true) 초기값으로 시작하므로
+  // 이펙트 본문에서 동기적으로 setState하지 않는다 (cascading render 방지).
   useEffect(() => {
-    setIsRecommendationsLoading(true);
     getRecommendedQuestions()
       .then((res) => setRecommendations(res.questions))
       .catch((err) => {

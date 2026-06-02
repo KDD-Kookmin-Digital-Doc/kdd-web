@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   MessageSquare,
   CheckSquare,
@@ -145,13 +145,18 @@ function RegisterModal({ count, onRegister, onClose }: RegisterModalProps) {
 // ─── FAQTab 메인 ─────────────────────────────────────────────────────────────
 
 export function FAQTab() {
-  const { candidates, approveCandidate, rejectCandidate } = useAdminFAQ();
+  const { candidates, setActiveTab, approveCandidate, rejectCandidate } = useAdminFAQ();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterTopic, setFilterTopic] = useState<string>("all");
   const [toast, setToast] = useState<string | null>(null);
+
+  // 이 탭은 FAQ 후보 목록만 렌더링하므로 마운트 시 후보를 로드한다.
+  useEffect(() => {
+    setActiveTab("candidates");
+  }, [setActiveTab]);
 
   function showToast(msg: string) {
     setToast(msg);

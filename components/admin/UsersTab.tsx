@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Search, Users, ChevronDown, Loader2 } from "lucide-react";
+import { Search, Users, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { UserTable } from "@/components/admin/UserTable";

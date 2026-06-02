@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, FileText, Loader2, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -45,14 +45,19 @@ export function PDFViewer({
   const [currentPage, setCurrentPage] = useState<number>(initialPage ?? 1);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // 모달이 새로 열릴 때 페이지/에러 상태 초기화
-  useEffect(() => {
+  // 모달이 새로 열리거나 다른 문서/페이지로 바뀌면 페이지·에러 상태를 초기화한다.
+  // 이펙트 대신 "값이 바뀌면 렌더 중 상태 보정"하는 React 권장 패턴을 사용한다.
+  // (https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const resetKey = `${open}|${fileUrl}|${initialPage ?? 1}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
     if (open) {
       setCurrentPage(initialPage ?? 1);
       setNumPages(0);
       setLoadError(null);
     }
-  }, [open, initialPage, fileUrl]);
+  }
 
   // file 객체는 매 렌더 새로 만들면 react-pdf가 매번 재요청한다 — useMemo로 안정화
   const fileSource = useMemo(() => {
