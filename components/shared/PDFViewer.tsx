@@ -19,6 +19,8 @@ const BACKEND_PROXY_PREFIX = "/api/backend";
 function resolveBackendUrl(fileUrl: string): string | null {
   if (!fileUrl) return null;
   if (/^(https?:|blob:|data:)/i.test(fileUrl)) return fileUrl;
+  // mock 데모용 정적 자산(public/mock/*)은 백엔드 프록시를 거치지 않고 직접 서빙한다.
+  if (fileUrl.startsWith("/mock/")) return fileUrl;
   if (fileUrl.startsWith("/")) return `${BACKEND_PROXY_PREFIX}${fileUrl}`;
   return null;
 }
